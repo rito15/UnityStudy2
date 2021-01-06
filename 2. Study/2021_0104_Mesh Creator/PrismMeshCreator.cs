@@ -9,11 +9,27 @@ public class PrismMeshCreator : CustomMeshCreator
     public float _bottomRadius = 2f;
     public float _height = 3f;
     public int _polygonVertex = 3;     // 윗면, 아랫면 다각형의 꼭짓점 개수
+    public PivotPoint _pivotPoint = PivotPoint.Bottom;
+
+    public enum PivotPoint
+    {
+        Top, Center, Bottom
+    }
 
     protected override void CalculateMesh(out Vector3[] verts, out int[] tris)
     {
         Vector3 botCenterPoint = Vector3.zero;
         Vector3 topCenterPoint = botCenterPoint + Vector3.up * _height;
+
+        // 피벗 재조정
+        float pivotHeight = 0f;
+        switch (_pivotPoint)
+        {
+            case PivotPoint.Top: pivotHeight = _height; break;
+            case PivotPoint.Center: pivotHeight = _height * 0.5f; break;
+        }
+        botCenterPoint -= Vector3.up * pivotHeight;
+        topCenterPoint -= Vector3.up * pivotHeight;
 
         int pvCount = _polygonVertex;
 

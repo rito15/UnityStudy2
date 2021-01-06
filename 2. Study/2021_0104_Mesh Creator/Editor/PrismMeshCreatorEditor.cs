@@ -30,6 +30,7 @@ public class PrismMeshCreatorEditor : Editor
         selected._bottomRadius  = EditorGUILayout.FloatField("Bottom Radius", selected._bottomRadius);
         selected._height        = EditorGUILayout.FloatField("Height", selected._height);
         selected._polygonVertex = EditorGUILayout.IntField("Vertices", selected._polygonVertex);
+        selected._pivotPoint = (PrismMeshCreator.PivotPoint)EditorGUILayout.EnumPopup("Pivot Point", selected._pivotPoint);
 
         if (GUILayout.Button("Create Mesh"))
         {

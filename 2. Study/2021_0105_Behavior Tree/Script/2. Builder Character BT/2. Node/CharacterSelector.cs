@@ -8,15 +8,9 @@ namespace Rito.BehaviorTree.Character
     /// <para/> 자식 중 하나라도 true이면 true 리턴 후 순회 중지,
     /// <para/> 자식들이 모두 false이면 false 리턴
     /// </summary>
-    public class CharacterSelector : CharacterNode, ISelectorNode
+    public class CharacterSelector : CharacterComposite, ISelectorNode
     {
-        public List<CharacterNode> ChildList { get; protected set; }
-
-        public CharacterSelector(CharacterNode nodes)
-        {
-            ChildList = new List<CharacterNode>();
-            ChildList.AddRange(nodes.NodeList);
-        }
+        public CharacterSelector(CharacterNode nodes) : base(nodes) { }
 
         public override bool Run()
         {

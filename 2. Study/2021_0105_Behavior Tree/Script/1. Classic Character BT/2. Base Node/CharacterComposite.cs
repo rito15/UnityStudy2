@@ -15,7 +15,7 @@ namespace Rito.BehaviorTree.ClassicCharacter
 
         public override abstract bool Run();
 
-        public ICompositeNode Add(INode childNode)
+        public CharacterComposite Add(INode childNode)
         {
             NodeList.Add(childNode);
             return this;

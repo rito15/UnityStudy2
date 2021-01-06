@@ -62,6 +62,11 @@ namespace Rito.BehaviorTree.Character
             return new CharacterSequence(nodes);
         }
 
+        private CharacterNode Parallel(CharacterNode nodes)
+        {
+            return new CharacterParallel(nodes);
+        }
+
         private CharacterNode Condition(Func<bool> condition)
         {
             return new CharacterCondition(condition);

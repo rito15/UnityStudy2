@@ -46,7 +46,7 @@ namespace Rito.BehaviorTree
     /// <summary> 리스트로 하위 노드들을 갖고 순회하기 위한 노드 </summary>
     public interface ICompositeNode : INode 
     {
-        /// <summary> 리스트에 새로운 노드 등록 </summary>
-        ICompositeNode Add(INode childNode);
+        ///// <summary> 리스트에 새로운 노드 등록 </summary>
+        //ICompositeNode Add(INode childNode);
     }
 }

@@ -34,6 +34,9 @@ namespace Rito.BehaviorTree
     /// </summary>
     public interface ISequenceNode : INode { }
 
+    /// <summary> 병행 처리 코드 </summary>
+    public interface IParallelNode : INode { }
+
     /// <summary> 조건 검사 코드 </summary>
     public interface IConditionNode : INode { }
 

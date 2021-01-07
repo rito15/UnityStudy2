@@ -18,6 +18,6 @@ namespace Rito.BehaviorTree.Character
             ChildList.AddRange(nodes.NodeList);
         }
 
-        public abstract bool Run();
+        public override bool Run() => true;
     }
 }

@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Rito.BehaviorTree.Character
 {
+    /// <summary> 단순 수행 노드 </summary>
     public class CharacterAction : CharacterNode, IActionNode
     {
         private Action _action;

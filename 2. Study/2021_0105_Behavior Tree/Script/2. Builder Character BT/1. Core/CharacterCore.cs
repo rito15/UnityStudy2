@@ -35,21 +35,13 @@ namespace Rito.BehaviorTree.Character
                (Wasd Input)  (Key Move)     (Mouse Input) (Mouse Move)
 
             */
-
             _root =
             Selector
             (
-                Sequence
-                (
-                    Condition(WasdInput)
-                    .Action(KeyMove)
-                )
-                .Sequence
-                (
-                    Condition(MouseInput)
-                    .Action(MouseMove)
-                )
+                ConditionalAction(WasdInput, KeyMove)
+                .ConditionalAction(MouseInput, MouseMove)
             );
+
         }
 
         private CharacterNode Selector(CharacterNode nodes)
@@ -70,6 +62,16 @@ namespace Rito.BehaviorTree.Character
         private CharacterNode Condition(Func<bool> condition)
         {
             return new CharacterCondition(condition);
+        }
+
+        private CharacterNode ConditionalAction(Func<bool> condition, Action action)
+        {
+            return new CharacterConditionalAction(condition, action);
+        }
+
+        private CharacterNode ConditionalUpdate(Func<bool> condition, Action update)
+        {
+            return new CharacterConditionalUpdate(condition, update);
         }
 
         private CharacterNode Action(Action action)

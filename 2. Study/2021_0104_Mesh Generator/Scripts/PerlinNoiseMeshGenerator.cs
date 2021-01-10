@@ -10,7 +10,11 @@ namespace Rito.MeshGenerator
     {
         public Vector2Int _resolution = new Vector2Int(24, 24);
         public Vector2 _width = new Vector2(10f, 10f);
+        public float _minHeight = 0f;
         public float _maxHeight = 1f;
+        public bool _randomize = false;
+        public bool _addRandomSmallNoises = false;
+        public float _smallNoiseRange = 0.1f;
 
         protected override void CalculateMesh(out Vector3[] verts, out int[] tris)
         {
@@ -25,9 +29,14 @@ namespace Rito.MeshGenerator
             verts = new Vector3[vertsCount];
             tris = new int[trisCount];
 
-            // 개발 편의용 임시 버텍스, 트리스 배열
-            //Vector3[,] V = new Vector3[res.x + 1, res.y + 1];
-            //int[,,] T = new int[res.x, res.y, 6];
+            Vector2 randomOffset = Vector2.zero;
+            if (_randomize)
+            {
+                randomOffset = new Vector2(
+                    randomOffset.x + Random.Range(0.001f, 10.001f),
+                    randomOffset.y + Random.Range(11.001f, 31.001f)
+                );
+            }
 
             // 1. 버텍스 초기화
             for (int j = 0; j < vCount.y; j++)
@@ -38,7 +47,7 @@ namespace Rito.MeshGenerator
                     verts[index] = startPoint
                         + new Vector3(
                             gridUnit.x * i,
-                            Mathf.PerlinNoise(i * 10f / _resolution.x, j * 10f / _resolution.y) * _maxHeight,// * Mathf.Pow(Random.Range(0.0f, 1f), 10f),
+                            GetPerlinNoiseHeight(i, j, randomOffset),
                             gridUnit.y * j
                         );
                 }
@@ -64,6 +73,32 @@ namespace Rito.MeshGenerator
                 }
             }
 
+            float GetPerlinNoiseHeight(int i, int j, Vector2 offset)
+            {
+                float a = i * 10f / _resolution.x;
+                float b = j * 10f / _resolution.y;
+
+                if (_randomize)
+                {
+                    a += offset.x;
+                    b += offset.y;
+                }
+
+                float noiseHeight =
+                    Mathf.PerlinNoise(a, b)
+                    * (_maxHeight - _minHeight);
+
+                if (_addRandomSmallNoises)
+                {
+                    noiseHeight += Random.Range(-_smallNoiseRange, _smallNoiseRange);
+                }
+
+                float noise = _minHeight + noiseHeight;
+
+                //Debug.Log($"{a:F3}, {b:F3}");
+
+                return noise;
+            }
         }
     }
 }

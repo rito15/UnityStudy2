@@ -41,11 +41,25 @@ namespace Rito.MeshGenerator
             if (selected._width.y <= 0f)
                 selected._width = new Vector2(selected._width.x, 1f);
 
-            if (selected._maxHeight <= 0) selected._maxHeight = 1f;
+            if (selected._maxHeight < selected._minHeight)
+                selected._maxHeight = selected._minHeight;
 
             selected._resolution = EditorGUILayout.Vector2IntField("Resolution XY", selected._resolution);
             selected._width = EditorGUILayout.Vector2Field("Width XY", selected._width);
+
+            EditorGUILayout.Space();
+            selected._minHeight = EditorGUILayout.FloatField("Min Height Limit", selected._minHeight);
             selected._maxHeight = EditorGUILayout.FloatField("Max Height Limit", selected._maxHeight);
+
+            EditorGUILayout.Space();
+            selected._randomize = EditorGUILayout.Toggle("Randomize", selected._randomize);
+            selected._addRandomSmallNoises = EditorGUILayout.Toggle("Add Random Small Noises", selected._addRandomSmallNoises);
+
+            if (selected._addRandomSmallNoises)
+            {
+                selected._smallNoiseRange = 
+                    EditorGUILayout.Slider("Small Noise Range", selected._smallNoiseRange, 0.01f, 1.0f);
+            }
 
             EditorGUILayout.Space();
             GUI.backgroundColor = Color.blue;

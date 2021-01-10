@@ -14,18 +14,28 @@ namespace Rito.MeshGenerator
         protected MeshFilter _meshFilter;
         protected Mesh _mesh;
 
+        protected Vector3[] _verts;
+
         public virtual void GenerateMesh()
         {
             TryGetComponent(out _meshFilter);
             _mesh = new Mesh();
             _meshFilter.mesh = _mesh;
 
-            CalculateMesh(out var verts, out var tris);
+            CalculateMesh(out _verts, out var tris);
 
             _mesh.Clear();
-            _mesh.vertices = verts;
+            _mesh.vertices = _verts;
             _mesh.triangles = tris;
             _mesh.RecalculateNormals();
+            //_mesh.RecalculateBounds();
+        }
+
+        protected virtual void Awake()
+        {
+            TryGetComponent(out _meshFilter);
+            _mesh = _meshFilter.mesh;
+            _verts = _mesh.vertices;
         }
 
         protected abstract void CalculateMesh(out Vector3[] verts, out int[] tris);

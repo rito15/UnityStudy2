@@ -214,6 +214,10 @@ namespace Rito
 
                 _mouseMovePoint = null;
             }
+            else
+            {
+                RBody.velocity = default;
+            }
         }
 
         protected void MouseMove()

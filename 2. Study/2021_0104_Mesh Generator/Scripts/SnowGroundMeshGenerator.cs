@@ -13,7 +13,7 @@ namespace Rito.MeshGenerator
     public class SnowGroundMeshGenerator : PerlinNoiseMeshGenerator
     {
         public bool _allowFootPrint = false;
-        public float _footPrintDepth = 0.1f;
+        public float _footPrintDepth = 0.2f;
 
         // 게임 시작 시 원래 버텍스 백업
         protected Vector3[] _originVerts;

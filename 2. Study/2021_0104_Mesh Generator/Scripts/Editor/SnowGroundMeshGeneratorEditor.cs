@@ -44,8 +44,6 @@ namespace Rito.MeshGenerator
             if (selected._maxHeight < selected._minHeight)
                 selected._maxHeight = selected._minHeight;
 
-            //if (selected._snowPrintDepth > selected._maxHeight)
-            //    selected._snowPrintDepth = selected._maxHeight;
 
             selected._resolution = EditorGUILayout.Vector2IntField("Resolution XY", selected._resolution);
             selected._width = EditorGUILayout.Vector2Field("Width XY", selected._width);
@@ -66,11 +64,26 @@ namespace Rito.MeshGenerator
             }
             EditorGUILayout.Space();
 
+            // 발자국 남기기
             selected._allowFootPrint = EditorGUILayout.Toggle("Allow Footprint", selected._allowFootPrint);
             if (selected._allowFootPrint)
             {
                 selected._footPrintDepth =
                     EditorGUILayout.Slider("FootPrint Depth", selected._footPrintDepth, 0.01f, 1.0f);
+
+                EditorGUILayout.Space();
+                // 발자국 자동 채우기
+                selected._autoAccumulateFootprint =
+                    EditorGUILayout.Toggle("Auto Accumulation", selected._autoAccumulateFootprint);
+
+                if (selected._autoAccumulateFootprint)
+                {
+                    selected._autoAccumCycle =
+                        EditorGUILayout.Slider("Accumulation Cycle", selected._autoAccumCycle, 0.01f, 1.0f);
+
+                    selected._autoAccumSpeed =
+                        EditorGUILayout.Slider("Accumulation Speed", selected._autoAccumSpeed, 1.0f, 10.0f);
+                }
             }
 
             EditorGUILayout.Space();

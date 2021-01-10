@@ -6,6 +6,8 @@ using UnityEngine;
 // 날짜 : 2021-01-10 PM 4:44:56
 // 작성자 : Rito
 
+using Random = UnityEngine.Random;
+
 namespace Rito.MeshGenerator
 {
     public class SnowGroundMeshGenerator : PerlinNoiseMeshGenerator
@@ -13,7 +15,17 @@ namespace Rito.MeshGenerator
         public bool _allowFootPrint = false;
         public float _footPrintDepth = 0.1f;
 
+        // 게임 시작 시 원래 버텍스 백업
         protected Vector3[] _originVerts;
+
+        // 발자국 인덱스, 깎인 높이
+        Dictionary<int, float> footPrintVertDict = new Dictionary<int, float>();
+        List<int> footPrintVertIndexList = new List<int>();
+
+        // 발자국 자동 채우기
+        public bool _autoAccumulateFootprint = true;
+        public float _autoAccumCycle = 0.1f;
+        public float _autoAccumSpeed = 1f;
 
         public override void GenerateMesh()
         {
@@ -29,7 +41,12 @@ namespace Rito.MeshGenerator
         {
             base.Awake();
             _originVerts = new Vector3[_verts.Length];
-            Array.Copy(_verts, _originVerts, 0); // 발자국 남기기 전의 버텍스 목록 카피
+            Array.Copy(_verts, _originVerts, _verts.Length); // 발자국 남기기 전의 버텍스 목록 카피
+        }
+
+        private void Start()
+        {
+            StartCoroutine(SnowAutoAccumulationRoutine());
         }
 
         /// <summary> 해당 위치에 가장 근접한 버텍스 인덱스 찾기 </summary>
@@ -90,32 +107,63 @@ namespace Rito.MeshGenerator
                 Vector3 vLocalPos = GetVertexLocalPoisition(vIndex);
                 float snowPrintedHeight = _originVerts[vIndex].y - _footPrintDepth;
 
+                // 발자국 남기기
                 if (vLocalPos.y > snowPrintedHeight)
+                {
                     _verts[vIndex] = new Vector3(vLocalPos.x, snowPrintedHeight, vLocalPos.z);
+
+                    // 발자국 딕셔너리에도 추가
+                    footPrintVertDict[vIndex] = _footPrintDepth;
+                    if (!footPrintVertIndexList.Contains(vIndex))
+                        footPrintVertIndexList.Add(vIndex);
+                }
             }
             _mesh.vertices = _verts;
             _mesh.RecalculateNormals();
             _mesh.RecalculateBounds();
-
-            //Debug.Log("Collision");
-
-            //int vertIndex = FindVertexIndex(collision.contacts[0].point);
-            //Debug.Log($"Vertex Index : {vertIndex}");
-
-            //Vector3 vertPos = GetVertexPoisition(vertIndex);
-            //Debug.Log($"Vertex Pos : {vertPos}");
-
-            //_footPrints.Add(vertPos);
         }
 
-        //List<Vector3> _footPrints = new List<Vector3>();
-        //private void OnDrawGizmos()
-        //{
-        //    Gizmos.color = Color.red;
-        //    foreach (var foot in _footPrints)
-        //    {
-        //        Gizmos.DrawWireSphere(foot, 0.1f);
-        //    }
-        //}
+        private IEnumerator SnowAutoAccumulationRoutine()
+        {
+            //var wfs = new WaitForSeconds(_autoAccumCycle);
+            while (true)
+            {
+                if (_autoAccumulateFootprint)
+                {
+                    // (임시) 발자국 다 채워진 버텍스 인덱스 목록
+                    List<int> recoveredVertIndexList = new List<int>();
+
+                    // 발자국 채우기
+                    for (int i = 0; i < footPrintVertIndexList.Count; i++)
+                    {
+                        int index = footPrintVertIndexList[i];
+                        float cut = 0.001f * _autoAccumSpeed;
+
+                        // 채워져야 할 버텍스들 : 채우기
+                        if (footPrintVertDict[index] > 0f)
+                        {
+                            footPrintVertDict[index] -= cut;
+                            _verts[index] = _verts[index] + Vector3.up * cut;
+                        }
+                        // 이미 채워진 버텍스 목록
+                        else
+                        {
+                            recoveredVertIndexList.Add(index);
+                        }
+                    }
+
+                    // 완전히 채워진 버텍스들 : 리스트에서 제거
+                    foreach (var item in recoveredVertIndexList)
+                    {
+                        footPrintVertIndexList.Remove(item);
+                    }
+
+                    _mesh.vertices = _verts;
+                    _mesh.RecalculateNormals();
+                    _mesh.RecalculateBounds();
+                }
+                yield return new WaitForSeconds(_autoAccumCycle);
+            }
+        }
     }
 }

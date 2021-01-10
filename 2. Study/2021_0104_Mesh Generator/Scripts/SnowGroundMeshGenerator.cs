@@ -77,6 +77,9 @@ namespace Rito.MeshGenerator
 
         private void OnCollisionEnter(Collision collision)
         {
+            if (_allowFootPrint == false)
+                return;
+
             // 충돌 지점마다 높이 깎아서 발자국 만들기
             foreach (var contact in collision.contacts)
             {

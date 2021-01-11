@@ -36,7 +36,7 @@ namespace Rito.MeshGenerator
             GUI.backgroundColor = oldBgColor;
         }
 
-        protected void DrawPerlinProperties()
+        private void DrawPerlinProperties()
         {
             if (selected._resolution.x < 1)
                 selected._resolution = new Vector2Int(1, selected._resolution.y);
@@ -75,7 +75,7 @@ namespace Rito.MeshGenerator
             }
         }
 
-        protected void DrawPerlinButtons()
+        private void DrawPerlinButtons()
         {
             GUIStyle btnWhiteFont = new GUIStyle(GUI.skin.button);
             btnWhiteFont.normal.textColor = Color.white;

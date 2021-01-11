@@ -12,6 +12,8 @@ namespace Rito.MeshGenerator
         public Vector2 _width = new Vector2(10f, 10f);
         public float _minHeight = 0f;
         public float _maxHeight = 1f;
+        public float _noiseDensity = 1f;
+
         public bool _randomize = false;
         public bool _addRandomSmallNoises = false;
         public float _smallNoiseRange = 0.1f;
@@ -83,6 +85,9 @@ namespace Rito.MeshGenerator
                     a += offset.x;
                     b += offset.y;
                 }
+
+                a *= _noiseDensity;
+                b *= _noiseDensity;
 
                 float noiseHeight =
                     Mathf.PerlinNoise(a, b)

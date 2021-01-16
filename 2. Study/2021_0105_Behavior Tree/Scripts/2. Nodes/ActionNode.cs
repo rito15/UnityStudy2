@@ -8,13 +8,13 @@ namespace Rito.BehaviorTree
     /// <summary> 행동 수행 노드 </summary>
     public class ActionNode : ILeafNode
     {
-        public Action Action { get; private set; }
+        public Action Action { get; protected set; }
         public ActionNode(Action action)
         {
             Action = action;
         }
 
-        public bool Run()
+        public virtual bool Run()
         {
             Action();
             return true;

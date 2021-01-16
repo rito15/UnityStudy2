@@ -33,8 +33,10 @@ namespace Rito.MeshGenerator
 
             var meshCol = GetComponent<MeshCollider>();
             if (meshCol != null)
-                DestroyImmediate(meshCol);
-            gameObject.AddComponent<MeshCollider>();
+                meshCol.sharedMesh = base._mesh;
+            //if (meshCol != null)
+            //    DestroyImmediate(meshCol);
+            //gameObject.AddComponent<MeshCollider>();
         }
 
         protected override void Awake()

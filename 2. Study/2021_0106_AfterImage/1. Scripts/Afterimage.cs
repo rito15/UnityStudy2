@@ -18,7 +18,7 @@ public class Afterimage : MonoBehaviour
         MeshRenderer mr = gameObject.AddComponent<MeshRenderer>();
 
         this.material = new Material(material);
-        originAlpha = this.material.color.a;
+        originAlpha = this.material.GetFloat("_Alpha");
         mr.material = this.material;
         mf = gameObject.AddComponent<MeshFilter>();
 
@@ -44,7 +44,8 @@ public class Afterimage : MonoBehaviour
         while (time > 0f)
         {
             time -= Time.deltaTime;
-            material.color = new Color(material.color.r, material.color.g, material.color.b, originAlpha * time);
+            material.SetFloat("_Alpha", originAlpha * time);
+            //material.color = new Color(material.color.r, material.color.g, material.color.b, originAlpha * time);
             yield return null;
         }
 

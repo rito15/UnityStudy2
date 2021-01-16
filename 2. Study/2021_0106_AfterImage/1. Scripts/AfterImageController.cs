@@ -10,10 +10,10 @@ public class AfterImageController : MonoBehaviour
 
     [Range(1, 20)]
     public int _imageCount = 10;        // 생성되는 잔상 개수
-    [Range(0.1f, 1f)]
-    public float _remainTime = 0.4f;    // 잔상 지속 시간
-    [Range(0.01f, 1f)]
-    public float _colorTransitionSpeed = 0.5f; // 잔상 색상 변경 속도
+    [Range(0.1f, 2f)]
+    public float _remainTime = 1.5f;    // 잔상 지속 시간
+    [Range(0.01f, 2f)]
+    public float _colorTransitionSpeed = 1f; // 잔상 색상 변경 속도
 
     public bool _createImageOnlyWhenMove = false; // 움직일 때만 잔상 남기기
 

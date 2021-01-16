@@ -16,12 +16,15 @@
 <img src="https://user-images.githubusercontent.com/42164422/104811385-6b849600-583e-11eb-8ecb-ef1ba4a09ae8.png" width="500">
 
 ## [3] Perlin Noise Ground
+<img src="https://user-images.githubusercontent.com/42164422/104811803-683ed980-5841-11eb-93c7-d20f6ba2b7a9.png" width="500">
+
 <img src="https://user-images.githubusercontent.com/42164422/104811400-8b1bbe80-583e-11eb-9416-c53a38faec41.png" width="500">
 <img src="https://user-images.githubusercontent.com/42164422/104811396-7f2ffc80-583e-11eb-9a0b-61a0cbb4c942.png" width="500">
 
 ## [4] Snow Ground
-<img src="https://user-images.githubusercontent.com/42164422/104811363-3e37e800-583e-11eb-916f-ea45abb74c41.gif" width="500">
+<img src="https://user-images.githubusercontent.com/42164422/104811804-69700680-5841-11eb-81d1-85024339782e.png" width="500">
 
+<img src="https://user-images.githubusercontent.com/42164422/104811363-3e37e800-583e-11eb-916f-ea45abb74c41.gif" width="500">
 <img src="https://user-images.githubusercontent.com/42164422/104811365-409a4200-583e-11eb-9d2e-5a34e10a1130.gif" width="500">
 
 # Field of View

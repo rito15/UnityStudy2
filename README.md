@@ -1,5 +1,5 @@
 ## Unity Study 2
-(2020. 09. 15 ~)
+(2021. 01. 05 ~)
 
 - Toys
 
@@ -74,6 +74,10 @@ https://github.com/rito15/Unity_Toys
  <center><img src="https://user-images.githubusercontent.com/42164422/104995793-2e045080-5a6a-11eb-86db-8c7601d12846.png" width="500"> </center>
  
  - 라이트(Directional Light) 계산
+ 
+ <center><img src="https://user-images.githubusercontent.com/42164422/105003713-5f831900-5a76-11eb-8090-bd2e8d6f9b87.png" width="500"></center>
+ 
+ - 간단한 구현 예시 (https://github.com/SebLague/Ray-Marching 활용)
  
 ### [2] 장점
  - 곡면을 부드럽게 렌더링할 수 있다.

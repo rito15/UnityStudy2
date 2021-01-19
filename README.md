@@ -15,6 +15,8 @@ https://github.com/rito15/Unity_Toys
   - Leaf : 동작을 수행하는 노드. 대표적으로 Action 또는 Task 노드가 있다.
   - Decorator : 다른 노드에 조건을 붙여 수식하는 노드
   - Composite : 자식 노드들을 가지며, 자식들을 순회하거나 선택하는 역할을 수행하는 노드
+  
+### 구현 예시
 
 <img src="https://user-images.githubusercontent.com/42164422/104877006-31310b00-599c-11eb-9115-bc883072ceac.png" width="500">
 

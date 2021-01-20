@@ -6,6 +6,22 @@ using UnityEngine;
 // 날짜 : 2021-01-12 PM 4:06:23
 // 작성자 : Rito
 
+/*
+    [하이라키 구성]
+
+    Root
+
+    ㄴ Walker (SmartWalker 컴포넌트)
+        ㄴ FP Rig
+            ㄴFP Cam (FirstPersonCamera 컴포넌트)
+
+        ㄴ ★캐릭터 모델링
+
+    ㄴ TP Rig
+        ㄴ TP Cam (ThirdPersonCamera 컴포넌트)
+
+*/
+
 public class SmartMovement : MonoBehaviour
 {
     /***********************************************************************
@@ -27,11 +43,12 @@ public class SmartMovement : MonoBehaviour
     {
         Input_ChangeCamView();
         Input_SetCursorVisibleState();
-        Input_RotatePlayerCamera();
+        Input_RotatePlayer();
         Input_CameraZoom();
         Input_CalculateKeyMoveDir();
 
         MoveByKeyboard();
+        Input_MoveKeyUpBrake();
 
         if (Anim != null)
         {
@@ -66,6 +83,27 @@ public class SmartMovement : MonoBehaviour
 
 
     /***********************************************************************
+    *                           Properties
+    ***********************************************************************/
+    #region .
+    public KeyOption Key => _keyOption;
+    public MoveOptionInfo Move => _moveOption;
+    public AnimationNameInfo AnimationName => _animationName;
+
+    public CameraOptionFirstPerson FPCamOption => _firstPersonCameraOption;
+    public CameraOptionThirdPerson TPCamOption => _thirdPersonCameraOption;
+
+    public Transform Walker { get; private set; }
+
+    public Rigidbody RBody
+    { get; private set; }
+    public Animator Anim { get; private set; }
+
+    public FirstPersonCamera FPCam { get; private set; }
+    public ThirdPersonCamera TPCam { get; private set; }
+
+    #endregion
+    /***********************************************************************
     *                           States
     ***********************************************************************/
     #region .
@@ -89,27 +127,9 @@ public class SmartMovement : MonoBehaviour
         /// <summary> 현재 선택된 카메라 뷰 </summary>
         public CameraViewOptions currentView = CameraViewOptions.ThirdPerson;
     }
-    [SerializeField]
+    [Space, SerializeField]
     public PlayerState _state = new PlayerState();
     public PlayerState State => _state;
-
-    #endregion
-    /***********************************************************************
-    *                           Properties
-    ***********************************************************************/
-    #region .
-    public KeyOption Key => _keyOption;
-    public MoveOptionInfo Move => _moveOption;
-    public AnimationNameInfo AnimationName => _animationName;
-
-    public CameraOptionFirstPerson FPCamOption => _firstPersonCameraOption;
-    public CameraOptionThirdPerson TPCamOption => _thirdPersonCameraOption;
-
-    public Rigidbody RBody { get; private set; }
-    public Animator Anim { get; private set; }
-
-    public FirstPersonCamera FPCam { get; private set; }
-    public ThirdPersonCamera TPCam { get; private set; }
 
     #endregion
     /***********************************************************************
@@ -238,6 +258,9 @@ public class SmartMovement : MonoBehaviour
     private void InitializeComponents()
     {
         // Gets
+        SmartWalker walker = GetComponentInChildren<SmartWalker>();
+        Walker = walker.transform;
+
         RBody = GetComponent<Rigidbody>();
         Anim = GetComponentInChildren<Animator>();
 
@@ -343,6 +366,9 @@ public class SmartMovement : MonoBehaviour
 
     private bool PlayerIsRunning() => State.isRunning;
 
+    private bool CurrentIsFPCamera() => State.currentView == CameraViewOptions.FirstPerson;
+    private bool CurrentIsTPCamera() => State.currentView == CameraViewOptions.ThirdPerson;
+
     #endregion
     /***********************************************************************
     *                           Calculation Methods
@@ -397,8 +423,35 @@ public class SmartMovement : MonoBehaviour
     /// <summary> 키보드 WASD 이동 </summary>
     private void MoveByKeyboard()
     {
-        Vector3 localMoveDir = transform.TransformDirection(_moveDir).normalized;
-        RBody.velocity = localMoveDir * Move.moveSpeed * (State.isRunning ? Move.runSpeedMultiplier : 1f);
+        if (!State.isMoving) return;
+
+        Vector3 worldMoveDir;
+        if (CurrentIsTPCamera())
+        {
+            worldMoveDir = TPCam.Rig.TransformDirection(_moveDir);
+        }
+        else
+        {
+            worldMoveDir = Walker.TransformDirection(_moveDir);
+        }
+
+        Vector3 next = worldMoveDir
+            * Move.moveSpeed * (State.isRunning ? Move.runSpeedMultiplier : 1f);
+
+        RBody.velocity = new Vector3(next.x, RBody.velocity.y, next.z);
+
+        // 워커 회전
+        if (CurrentIsTPCamera())
+        {
+            Vector3 dir = TPCam.Rig.TransformDirection(_moveDir);
+            float currentY = Walker.localEulerAngles.y;
+            float nextY = Quaternion.LookRotation(dir, Vector3.up).eulerAngles.y;
+
+            if (nextY - currentY > 180f) nextY -= 360f;
+            else if (currentY - nextY > 180f) nextY += 360f;
+
+            Walker.eulerAngles = Vector3.up * Mathf.Lerp(currentY, nextY, 0.05f);
+        }
     }
 
     #endregion
@@ -406,6 +459,18 @@ public class SmartMovement : MonoBehaviour
     *                           Input Action Methods
     ***********************************************************************/
     #region .
+
+    /// <summary> WASD 키를 떼면 XZ 이동 브레이크 </summary>
+    private void Input_MoveKeyUpBrake()
+    {
+        if (Input.GetKeyUp(Key.moveForward) ||
+            Input.GetKeyUp(Key.moveBackward) ||
+            Input.GetKeyUp(Key.moveLeft) ||
+            Input.GetKeyUp(Key.moveRight))
+        {
+            RBody.velocity = new Vector3(0f, RBody.velocity.y, 0f);
+        }
+    }
 
     /// <summary> FP, TP 카메라 변경 </summary>
     private void Input_ChangeCamView()
@@ -449,47 +514,98 @@ public class SmartMovement : MonoBehaviour
     }
 
     /// <summary> 마우스를 상하/좌우로 움직여서 카메라 회전 </summary>
-    private void Input_RotatePlayerCamera()
+    private void Input_RotatePlayer()
+    {
+        if (State.currentView == CameraViewOptions.FirstPerson) RotateFP();
+        else RotateTP();
+    }
+
+    private void RotateFP()
+    {
+        Transform fpCamRig = FPCam.Rig; // Rig : 상하 회전
+        Transform walker = Walker;  // Walker : 좌우 회전
+
+        // ================================================
+        // 상하 : 카메라 Rig 회전
+        float vDegree = -Input.GetAxisRaw("Mouse Y");
+        float xRotPrev = fpCamRig.localEulerAngles.x;
+        float xRotNext = xRotPrev
+            + vDegree
+            * _currentCamOption.rotationSpeed
+            * Time.deltaTime * 50f;
+
+        if (xRotNext > 180f)
+            xRotNext -= 360f;
+
+        // ================================================
+        // 좌우 : 워커 회전
+        float hDegree = Input.GetAxisRaw("Mouse X");
+        float yRotPrev = walker.localEulerAngles.y;
+        float yRotAdd =
+            hDegree
+            * _currentCamOption.rotationSpeed
+            * Time.deltaTime * 50f;
+        float yRotNext = yRotAdd + yRotPrev;
+
+        // 상하 회전 가능 여부
+        bool xRotatable =
+            _currentCamOption.lookUpDegree < xRotNext &&
+            _currentCamOption.lookDownDegree > xRotNext;
+
+        // Rig 상하 회전 적용
+        fpCamRig.localEulerAngles = Vector3.right * (xRotatable ? xRotNext : xRotPrev);
+
+        // 워커 좌우 회전 적용
+        walker.localEulerAngles = Vector3.up * yRotNext;
+    }
+
+    float cur;
+    private void RotateTP()
     {
         if (State.isCursorVisible && !_isMouseMiddlePressed)
             return;
 
-        float horizontalRotationFactor = 50f;
-        float verticalRotationFactor = 50f;
+        Transform tpCamRig = TPCam.Rig;
 
-        // 좌우 : 캐릭터 회전
-        float hDegree = Input.GetAxisRaw("Mouse X");
-        transform.localEulerAngles +=
-            Vector3.up
-            * hDegree
-            * _currentCamOption.rotationSpeed
-            * Time.deltaTime
-            * horizontalRotationFactor;
-
+        // ================================================
         // 상하 : 카메라 Rig 회전
         float vDegree = -Input.GetAxisRaw("Mouse Y");
-        float prevXRot = _currentCam.Rig.localEulerAngles.x;
-        float nextXRot = prevXRot
+        float xRotPrev = tpCamRig.localEulerAngles.x;
+        float xRotNext = xRotPrev
             + vDegree
             * _currentCamOption.rotationSpeed
-            * Time.deltaTime
-            * verticalRotationFactor;
+            * Time.deltaTime * 50f;
 
-        if (nextXRot > 180f)
-            nextXRot -= 360f;
+        if (xRotNext > 180f)
+            xRotNext -= 360f;
 
-        if (_currentCamOption.lookUpDegree < nextXRot &&
-            _currentCamOption.lookDownDegree > nextXRot)
-        {
-            _currentCam.Rig.localEulerAngles = Vector3.right * nextXRot;
-        }
+        // ================================================
+        // 좌우 : 카메라 Rig 회전
+        float hDegree = Input.GetAxisRaw("Mouse X");
+        float yRotPrev = tpCamRig.localEulerAngles.y;
 
-        // TODO : FP인 경우 머리도 같이 돌려주기
-        //if (State.currentView == CameraViewOptions.FirstPerson)
-        //{
-        //    CameraFP.headTran.localEulerAngles = currentCam.rig.localEulerAngles;
-        //}
+        float yRotAdd =
+            hDegree
+            * _currentCamOption.rotationSpeed
+            * Time.deltaTime * 50f;
+        float yRotNext = yRotAdd + yRotPrev;
+
+        // 상하 회전 가능 여부 판정
+        bool xRotatable =
+            _currentCamOption.lookUpDegree < xRotNext &&
+            _currentCamOption.lookDownDegree > xRotNext;
+
+        Vector3 nextRot = new Vector3
+        (
+            xRotatable ? xRotNext : xRotPrev,
+            yRotNext,
+            0f
+        );
+
+        // Rig 상하좌우 회전 적용
+        tpCamRig.localEulerAngles = nextRot;
     }
+
 
     /// <summary> TP Cam : 마우스 휠 굴려서 확대/축소 </summary>
     private void Input_CameraZoom()

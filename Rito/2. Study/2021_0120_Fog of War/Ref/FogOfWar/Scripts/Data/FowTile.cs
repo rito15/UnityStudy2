@@ -11,6 +11,7 @@ namespace Rito.FogOfWar
     {
         public int type;
         public TilePos pos;
+
         public int X => pos.x;
         public int Y => pos.y;
 

@@ -222,9 +222,10 @@ namespace Rito.FogOfWar
 
     public static class FogHelper
     {
-        public static bool InMap(int x, int y, int mapWidth, int mapHeight)
+        public static bool InMap(TilePos pos, int mapWidth, int mapHeight)
         {
-            return (x >= 0 && y >= 0 && x < mapWidth && y < mapHeight);
+            return pos.x >= 0 && pos.y >= 0 &&
+                   pos.x < mapWidth && pos.y < mapHeight;
         }
 
         public static bool CantDisplay(int x1, int y1, int x2, int y2, float z)

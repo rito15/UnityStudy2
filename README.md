@@ -44,7 +44,7 @@ https://github.com/rito15/Unity_Toys
  
 <center><img src="https://user-images.githubusercontent.com/42164422/104993172-ce0bab00-5a65-11eb-9eda-705de2034f17.png" width="500"></center>
  
- ###
+###
  
  - 한 점(RO : Ray Origin, 위의 그림에서 Camera)에서 스크린의 각각의 픽셀을 향한 방향(RD : Ray Direction, 위의 그림에서 Image)들을 향해
    레이 캐스팅을 하여, 각 레이마다 여러 스텝(Step)으로 나누어 레이를 전진시키게 된다.
@@ -63,21 +63,21 @@ https://github.com/rito15/Unity_Toys
  
  - 각 픽셀들에 대한 계산이 끝나면 표면의 노말과 라이팅 계산을 적용한다.
  
+ ###
+ 
+ - 거리 계산
  <center><img src="https://user-images.githubusercontent.com/42164422/104995624-f0072c80-5a69-11eb-9888-15b0f89edd41.png" width="500"></center>
 
- - 거리 계산
-
+ - 노멀 계산
  <center><img src="https://user-images.githubusercontent.com/42164422/104995731-1927bd00-5a6a-11eb-8f0b-c63f60abe394.png" width="500"> </center>
 
- - 노멀 계산
-
+ - 라이트(Directional Light) 계산
  <center><img src="https://user-images.githubusercontent.com/42164422/104995793-2e045080-5a6a-11eb-86db-8c7601d12846.png" width="500"> </center>
  
- - 라이트(Directional Light) 계산
- 
+ - 간단한 구현 예시 (https://github.com/SebLague/Ray-Marching 활용)
  <center><img src="https://user-images.githubusercontent.com/42164422/105003713-5f831900-5a76-11eb-8090-bd2e8d6f9b87.png" width="500"></center>
  
- - 간단한 구현 예시 (https://github.com/SebLague/Ray-Marching 활용)
+###
  
 ### [2] 장점
  - 곡면을 부드럽게 렌더링할 수 있다.
@@ -115,7 +115,7 @@ https://github.com/rito15/Unity_Toys
  - 지정한 유닛이 한 번이라도 위치했던 영역들은 a = 0.5~0.8,
  - 지정한 유닛이 한 번도 방문하지 않은 영역은 a = 1로 표현한다.
 
-#
+###
 
 ## [2] 구현 방법
 ### [2-1] 카메라와 지상 사이에 안개 플레인 사용
@@ -128,25 +128,25 @@ https://github.com/rito15/Unity_Toys
 
 <img src="https://user-images.githubusercontent.com/42164422/105534838-6e492480-5d31-11eb-8914-546fc287e45f.png" width="500">
 
-#
+###
 
 ### [2-2] 타일맵 기반 구현
 
 <img src="https://user-images.githubusercontent.com/42164422/105534813-65f0e980-5d31-11eb-9151-9d8859e12acc.png" width="500">
 
-#
+###
 
 ### 타일맵
 - 정사각형 타일 하나의 가로,세로 너비와 전체 안개 플레인의 가로, 세로 너비를 결정한다. (예 : 타일 너비 0.5, 안개 20x20)
 
 - 게임 시작 시 각각의 타일마다 지형의 높이(position.y)를 계산해 2차원 배열로 저장한다. (-Y 방향 레이캐스트 이용, 배열의 크기는 전체 타일 개수(플레인 가로 너비 * 세로 너비))
 
-#
+###
 
 ### 유닛
 - 시야를 밝힐 대상 유닛들은 리스트를 통해 실시간으로 관리된다.
 
-#
+###
 
 ### Visit 배열
 - 배열의 크기는 타일의 개수와 같다.
@@ -154,7 +154,7 @@ https://github.com/rito15/Unity_Toys
 - Visit.ever 배열은 한 번이라도 시야가 확보됐던 타일들에 대해 true값을 가지며, 한 번 true가 된 타일은 항상 그 값을 true로 유지한다.
 - 유닛들의 위치를 중심으로 반복문을 통해, 주기적으로 Visit 배열을 갱신한다.
 
-#
+###
 
 ### 시야 계산
 - 주기적으로(0.2~0.5초) 각 유닛들이 위치한 타일 기준으로 주변의 시야를 계산한다.
@@ -171,7 +171,7 @@ https://github.com/rito15/Unity_Toys
   - [4] 결과로 얻은 타일들에 대해, Visit.current 및 Visit.ever 배열의 값을 true로 초기화한다,
    <img src="https://user-images.githubusercontent.com/42164422/105534342-b156c800-5d30-11eb-81d9-76480f4c9dcb.png" width="250">
 
-#
+###
 
 ### Fog 텍스쳐
 - 텍스쳐의 알파값 저장을 위한 Color 배열이 필요하며, 크기는 타일의 개수와 같다.
@@ -179,19 +179,19 @@ https://github.com/rito15/Unity_Toys
 - 시야 계산이 끝날 때마다 Visit.current, Visit.ever 값에 따라 Color 배열의 A 값을 초기화한다. (current -> 0, ever -> 0.5~0.8, 그 외 1)
 - Color 배열을 텍스쳐에 적용한다.
 
-#
+###
 
 ### Fog 쉐이더
 - Fog 쉐이더는 ZTest Off로 설정하여 항상 다른 오브젝트들 위에 보이게 한다.
 
-#
+###
 
 ### 블러, 보간 효과
 - 자연스러운 블러 효과를 위해, 가우시안 블러를 적용하는 쉐이더를 사용한다.
 - 매 프레임마다 이전 프레임의 시야 텍스쳐를 현재 프레임의 텍스쳐에 부드럽게 보간하여 적용한다.
 - 부자연스러운 픽셀이 나타나는 것을 방지하기 위해 렌더 텍스쳐를 여러 장 거쳐 보간을 적용한다.
 
-#
+###
 
 <img src="https://user-images.githubusercontent.com/42164422/105534346-b451b880-5d30-11eb-9f4a-3bb0b35c069b.gif" width="500">
 

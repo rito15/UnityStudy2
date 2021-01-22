@@ -107,8 +107,8 @@ namespace Rito.FogOfWar
         *                               Public Methods
         ***********************************************************************/
         #region .
-        /// <summary> 이전 시행의 안개와 이번 시행의 안개를 부드럽게 보간 </summary>
-        public void Lerp()
+        /// <summary> 이전 프레임의 안개를 현재 프레임에 부드럽게 보간 </summary>
+        public void LerpBlur()
         {
             Graphics.Blit(curTexture, renderBuffer);
             blurMat.SetTexture("_LastTex", renderBuffer);
@@ -131,7 +131,8 @@ namespace Rito.FogOfWar
             int sightRangeInt = (int)sightXZ;
             int rangeSquare = sightRangeInt * sightRangeInt;
 
-            // 현재 시야만큼의 타일들 목록
+            // 현재 시야(원형 범위)만큼의 타일들 목록
+            // x^2 + y^2 <= range^2
             var tilesInSight = new List<FowTile>();
             for (int i = -sightRangeInt; i <= sightRangeInt; i++)
             {

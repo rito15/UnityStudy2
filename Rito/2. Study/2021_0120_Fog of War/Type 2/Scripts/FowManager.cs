@@ -145,7 +145,7 @@ namespace Rito.FogOfWar
 
         private void Update()
         {
-            Map.Lerp();
+            Map.LerpBlur();
             UpdateFogTexture();
         }
 
@@ -289,9 +289,12 @@ namespace Rito.FogOfWar
                 }
                 foreach (var unit in UnitList)
                 {
-                    Vector3 pos = unit.transform.position;
+                    TilePos tilePos = GetTilePos(unit);
+                    Vector2 center = GetTileCenterPoint(tilePos.x, tilePos.y);
+
                     Gizmos.color = Color.blue;
-                    Gizmos.DrawCube(new Vector3(pos.x, pos.y, pos.z), new Vector3(_tileSize - 0.02f, 1f, _tileSize - 0.02f));
+                    Gizmos.DrawCube(new Vector3(center.x, 0f, center.y), 
+                        new Vector3(_tileSize, 1f, _tileSize));
 
                 }
             }

@@ -1,3 +1,5 @@
+#define DEBUG_RANGE
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -126,7 +128,11 @@ namespace Rito.FogOfWar
         }
 
         /// <summary> 타일 위치로부터 시야만큼 안개 계산 </summary>
-        public void ComputeFog(TilePos pos, in float sightXZ, in float sightY/*, out List<FowTile> visibles*/)
+        public void ComputeFog(TilePos pos, in float sightXZ, in float sightY
+#if DEBUG_RANGE
+            , out List<FowTile> visibles
+#endif
+            )
         {
             int sightRangeInt = (int)sightXZ;
             int rangeSquare = sightRangeInt * sightRangeInt;
@@ -152,9 +158,9 @@ namespace Rito.FogOfWar
             // 시야를 밝힐 수 있는 타일들 목록 가져오기
             List<FowTile> visibleTileList =
                 GetVisibleTilesInRange(tilesInSight, pos, sightY);
-
-            //visibles = visibleTileList;
-
+#if DEBUG_RANGE
+            visibles = visibleTileList;
+#endif
             // 현재 방문, 과거 방문 여부 true
             foreach (FowTile visibleTile in visibleTileList)
             {

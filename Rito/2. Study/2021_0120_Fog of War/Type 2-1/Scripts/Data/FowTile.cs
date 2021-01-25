@@ -28,5 +28,12 @@ namespace Rito.FogOfWar
 
             index = x + y * width;
         }
+
+        public int Distance(FowTile other)
+        {
+            int distX = other.X - X;
+            int distY = other.Y - Y;
+            return (distX * distX) + (distY * distY);
+        }
     }
 }

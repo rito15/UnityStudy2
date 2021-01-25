@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿#define DEBUG_RANGE
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -77,7 +79,7 @@ namespace Rito.FogOfWar
         *                               Fog Renderer
         ***********************************************************************/
         #region .
-        private Material _fogMaterial;
+        /*private Material _fogMaterial;
 
         void InitFogTexture()
         {
@@ -104,7 +106,7 @@ namespace Rito.FogOfWar
             {
                 _fogMaterial.SetTexture("_MainTex", Map.FogTexture);
             }
-        }
+        }*/
 
         #endregion
         /***********************************************************************
@@ -136,7 +138,7 @@ namespace Rito.FogOfWar
             CheckInstance();
             UnitList = new List<FowUnit>();
             InitMap();
-            InitFogTexture();
+            //InitFogTexture();
         }
         private void OnEnable()
         {
@@ -146,7 +148,7 @@ namespace Rito.FogOfWar
         private void Update()
         {
             Map.LerpBlur();
-            UpdateFogTexture();
+            //UpdateFogTexture();
         }
 
         private void OnDestroy()
@@ -243,16 +245,20 @@ namespace Rito.FogOfWar
                         TilePos pos = GetTilePos(unit);
                         Map.ComputeFog(pos,
                             unit.sightRange / _tileSize,
-                            unit.sightHeight/*, out visibleTiles*/);
+                            unit.sightHeight
+#if DEBUG_RANGE
+                            , out visibleTiles
+#endif
+                            );
                     }
                 }
 
                 yield return new WaitForSeconds(_updateCycle);
             }
         }
-
-        //List<FowTile> visibleTiles = new List<FowTile>();
-
+#if DEBUG_RANGE
+        List<FowTile> visibleTiles = new List<FowTile>();
+#endif
         #endregion
 
         /***********************************************************************
@@ -264,12 +270,14 @@ namespace Rito.FogOfWar
         {
             if (Application.isPlaying == false) return;
 
-            //foreach (var tile in visibleTiles)
-            //{
-            //    Vector2 pos = GetTileCenterPoint(tile.X, tile.Y);
-            //    Gizmos.color = Color.green;
-            //    Gizmos.DrawCube(new Vector3(pos.x, 0f, pos.y), new Vector3(_tileSize, 1f, _tileSize));
-            //}
+#if DEBUG_RANGE
+            foreach (var tile in visibleTiles)
+            {
+                Vector2 pos = GetTileCenterPoint(tile.X, tile.Y);
+                Gizmos.color = Color.green;
+                Gizmos.DrawCube(new Vector3(pos.x, 0f, pos.y), new Vector3(_tileSize, 1f, _tileSize));
+            }
+#endif
 
             if (_showGizmos == false) return;
 

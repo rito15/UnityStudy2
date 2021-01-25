@@ -188,7 +188,7 @@ namespace Rito.FogOfWar
                     continue;
 
                 // 2. 유닛과 해당 타일 사이에 유닛보다 더 높은 높이의 타일이 있는 경우 불가능
-                if (IsTargetTileSightBlocked(centerPos, tile, sightHeight))
+                if (TileCast(centerPos, tile, sightHeight))
                     continue;
 
                 visibleTiles.Add(tile);
@@ -198,7 +198,7 @@ namespace Rito.FogOfWar
         }
 
         /// <summary> 특정 위치의 타일로부터 대상 타일까지 가려지지 않았는지 검사 </summary>
-        private bool IsTargetTileSightBlocked(in TilePos origin, FowTile dest, in float sightHeight)
+        private bool TileCast(in TilePos origin, FowTile dest, in float sightHeight)
         {
             // 동일 위치
             if (origin.x == dest.X && origin.y == dest.Y) return false;
@@ -273,24 +273,22 @@ namespace Rito.FogOfWar
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x + xMove, y + yMove))
-                            return true;
-
                         if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
                         else yMove++;
 
+                        if (isBlocked(x + xMove, y + yMove))
+                            return true;
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x + xMove, y + yMove))
-                            return true;
-
                         if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
                         else xMove++;
 
+                        if (isBlocked(x + xMove, y + yMove))
+                            return true;
                     }
                 }
             }
@@ -301,24 +299,22 @@ namespace Rito.FogOfWar
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x - xMove, y + yMove))
-                            return true;
-
                         if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
                         else yMove++;
 
+                        if (isBlocked(x - xMove, y + yMove))
+                            return true;
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x - xMove, y + yMove))
-                            return true;
-
                         if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
                         else xMove++;
 
+                        if (isBlocked(x - xMove, y + yMove))
+                            return true;
                     }
                 }
             }
@@ -329,24 +325,22 @@ namespace Rito.FogOfWar
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x - xMove, y - yMove))
-                            return true;
-
                         if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
                         else yMove++;
 
+                        if (isBlocked(x - xMove, y - yMove))
+                            return true;
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x - xMove, y - yMove))
-                            return true;
-
                         if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
                         else xMove++;
 
+                        if (isBlocked(x - xMove, y - yMove))
+                            return true;
                     }
                 }
             }
@@ -357,24 +351,22 @@ namespace Rito.FogOfWar
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x + xMove, y - yMove))
-                            return true;
-
                         if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
                         else yMove++;
 
+                        if (isBlocked(x + xMove, y - yMove))
+                            return true;
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
-                        if (isBlocked(x + xMove, y - yMove))
-                            return true;
-
                         if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
                         else xMove++;
 
+                        if (isBlocked(x + xMove, y - yMove))
+                            return true;
                     }
                 }
             }

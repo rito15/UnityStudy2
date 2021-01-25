@@ -244,7 +244,7 @@ namespace Rito.FogOfWarJob
         }
 
         /// <summary> 특정 위치의 타일로부터 대상 타일까지 가려지지 않았는지 검사 </summary>
-        /*private bool IsTargetTileSightBlocked(in TilePos origin, TilePos dest, in float sightHeight)
+        /*private bool TileCast(in TilePos origin, TilePos dest, in float sightHeight)
         {
             // 동일 위치
             if (origin.x == dest.X && origin.y == dest.Y) return false;

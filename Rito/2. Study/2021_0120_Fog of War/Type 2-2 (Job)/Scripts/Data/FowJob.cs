@@ -122,30 +122,28 @@ namespace Rito.FogOfWarJob
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
+                        else yMove++;
+
                         if (IsBlocked(x + xMove, y + yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
-                        else yMove++;
-
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
+                        else xMove++;
+
                         if (IsBlocked(x + xMove, y + yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
-                        else xMove++;
-
                     }
                 }
             }
@@ -156,30 +154,28 @@ namespace Rito.FogOfWarJob
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
+                        else yMove++;
+
                         if (IsBlocked(x - xMove, y + yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
-                        else yMove++;
-
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
+                        else xMove++;
+
                         if (IsBlocked(x - xMove, y + yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
-                        else xMove++;
-
                     }
                 }
             }
@@ -190,30 +186,28 @@ namespace Rito.FogOfWarJob
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
+                        else yMove++;
+
                         if (IsBlocked(x - xMove, y - yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
-                        else yMove++;
-
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
+                        else xMove++;
+
                         if (IsBlocked(x - xMove, y - yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
-                        else xMove++;
-
                     }
                 }
             }
@@ -224,30 +218,28 @@ namespace Rito.FogOfWarJob
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
+                        else yMove++;
+
                         if (IsBlocked(x + xMove, y - yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)xMove / (yMove + 1) < xyRatio) xMove++;
-                        else yMove++;
-
                     }
                 }
                 else
                 {
                     while (xMove < xLen && yMove < yLen)
                     {
+                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
+                        else xMove++;
+
                         if (IsBlocked(x + xMove, y - yMove))
                         {
                             resultArray[i] = true;
                             return;
                         }
-
-                        if ((float)yMove / (xMove + 1) < yxRatio) yMove++;
-                        else xMove++;
-
                     }
                 }
             }

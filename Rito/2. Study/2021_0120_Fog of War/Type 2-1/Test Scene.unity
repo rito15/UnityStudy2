@@ -15581,7 +15581,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2022703077}
   - component: {fileID: 2022703076}
-  - component: {fileID: 2022703078}
   m_Layer: 0
   m_Name: FogOfWar
   m_TagString: Untagged
@@ -15601,6 +15600,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e84dcb05944e134587e67e335ba22b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _rendererPrefab: {fileID: 1489479144709424, guid: 5f0349d33c8d8f54ca654b9828f90226,
+    type: 3}
   _groundLayer:
     serializedVersion: 2
     m_Bits: 256
@@ -15623,20 +15624,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2022703078
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2022703075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e98afe1e0dafdf4a84b16746a4b9eb5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rendererPrefab: {fileID: 1489479144709424, guid: 5f0349d33c8d8f54ca654b9828f90226,
-    type: 3}
 --- !u!1 &2026287061
 GameObject:
   m_ObjectHideFlags: 0

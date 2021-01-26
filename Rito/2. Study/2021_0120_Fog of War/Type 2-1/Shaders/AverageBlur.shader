@@ -64,14 +64,14 @@
 	SubShader
 	{
 		Cull Off ZWrite Off ZTest Always 
-		Pass
+		Pass // Pass 0 : Blur
 		{
 			CGPROGRAM
 			#pragma vertex vert	
 			#pragma fragment frag
 			ENDCG
 		}
-		Pass
+		Pass // Pass 1 : Lerp Last -> Current
 		{
 			CGPROGRAM
 			#pragma vertex vert	

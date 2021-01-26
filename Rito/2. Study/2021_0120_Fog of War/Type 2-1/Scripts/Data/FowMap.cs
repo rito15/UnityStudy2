@@ -16,32 +16,34 @@ namespace Rito.FogOfWar
         // 배열들은 타일 개수만큼 크기 생성
         private Visit[] visit;
 
-        //public Color32[] colorBuffer;
-        private Color32[] fogBuffer;
+        private Color[] colorBuffer;
         private Material blurMat;
 
         private Texture2D texBuffer;
-        private RenderTexture renderBuffer; // 렌더텍스쳐 여러장 쓰는 이유 : 안개를 더 부드럽게 보이게 하기 위해
-        private RenderTexture renderBuffer2;
-        private RenderTexture nextTexture;
+        private RenderTexture blurBuffer; // 렌더텍스쳐 여러장 쓰는 이유 : 안개를 더 부드럽게 보이게 하기 위해
+        private RenderTexture blurBuffer2;
+
         private RenderTexture curTexture;
+        private RenderTexture lerpBuffer;
+        private RenderTexture nextTexture;
 
         public Texture FogTexture => curTexture;
+
+        public FowManager FM => FowManager.I;
 
         /***********************************************************************
         *                               Init, Release
         ***********************************************************************/
         #region .
-        public void InitMap(float[,] heightData)
+        public void InitMap(float[,] heightMap)
         {
             map.Clear();
-            mapWidth = heightData.GetLength(0);
-            mapHeight = heightData.GetLength(1);
+            mapWidth  = heightMap.GetLength(0);
+            mapHeight = heightMap.GetLength(1);
 
-            visit = new Visit[mapWidth * mapHeight];
-            fogBuffer = new Color32[mapWidth * mapHeight];
+            visit       = new Visit[mapWidth * mapHeight];
+            colorBuffer = new Color[mapWidth * mapHeight];
 
-            //colorInfo = new Color32[mapWidth * mapHeight];
             blurMat = new Material(Shader.Find("FogOfWar/AverageBlur"));
             texBuffer = new Texture2D(mapWidth, mapHeight, TextureFormat.ARGB32, false);
             texBuffer.wrapMode = TextureWrapMode.Clamp;
@@ -49,28 +51,30 @@ namespace Rito.FogOfWar
             int width  = (int)(mapWidth * 1.5f);
             int height = (int)(mapHeight * 1.5f);
 
-            renderBuffer  = RenderTexture.GetTemporary(width,height, 0);
-            renderBuffer2 = RenderTexture.GetTemporary(width, height, 0);
+            blurBuffer  = RenderTexture.GetTemporary(width, height, 0);
+            blurBuffer2 = RenderTexture.GetTemporary(width, height, 0);
 
-            nextTexture = RenderTexture.GetTemporary(width, height, 0);
             curTexture  = RenderTexture.GetTemporary(width, height, 0);
+            nextTexture = RenderTexture.GetTemporary(width, height, 0);
+            lerpBuffer  = RenderTexture.GetTemporary(width, height, 0);
 
             for (int j = 0; j < mapHeight; j++)
             {
                 for (int i = 0; i < mapWidth; i++)
                 {
-                    // 타일정보 : 장애물여부, X좌표, Y좌표, 너비
-                    map.Add(new FowTile(heightData[i, j], i, j, mapWidth));
+                    // 타일정보 : 높이, X좌표, Y좌표, 너비
+                    map.Add(new FowTile(heightMap[i, j], i, j, mapWidth));
                 }
             }
         }
 
         public void Release()
         {
-            RenderTexture.ReleaseTemporary(renderBuffer);
-            RenderTexture.ReleaseTemporary(renderBuffer2);
-            RenderTexture.ReleaseTemporary(nextTexture);
+            RenderTexture.ReleaseTemporary(blurBuffer);
+            RenderTexture.ReleaseTemporary(blurBuffer2);
             RenderTexture.ReleaseTemporary(curTexture);
+            RenderTexture.ReleaseTemporary(nextTexture);
+            RenderTexture.ReleaseTemporary(lerpBuffer);
         }
 
         #endregion
@@ -112,8 +116,13 @@ namespace Rito.FogOfWar
         /// <summary> 이전 프레임의 안개를 현재 프레임에 부드럽게 보간 </summary>
         public void LerpBlur()
         {
-            Graphics.Blit(curTexture, renderBuffer);
-            blurMat.SetTexture("_LastTex", renderBuffer);
+            // CurTexture  -> LerpBuffer
+            // LerpBuffer  -> "_LastTex"
+            // NextTexture -> FogTexture [Pass 1 : Lerp]
+
+            Graphics.Blit(curTexture, lerpBuffer);
+            blurMat.SetTexture("_LastTex", lerpBuffer);
+
             Graphics.Blit(nextTexture, curTexture, blurMat, 1);
         }
 
@@ -387,24 +396,27 @@ namespace Rito.FogOfWar
             foreach (var tile in map)
             {
                 int index = tile.index;
-                byte alpha;
+                float alpha;
 
-                if (visit[index].current) alpha = 0;     // 현재 위치한 경우 알파 제로
-                else if (visit[index].ever) alpha = 200; // 과거 방문 이력
-                else alpha = 255;                        // 한 번도 방문한 적 없음
+                if (visit[index].current)   alpha = FM._fogAlpha.current; // 현재
+                else if (visit[index].ever) alpha = FM._fogAlpha.visited; // 과거
+                else alpha = FM._fogAlpha.never;                          // 미답
 
-                fogBuffer[index].a = alpha;
+                colorBuffer[index].a = alpha;
             }
 
-            texBuffer.SetPixels32(fogBuffer);
+            // ColorBuffer -> TexBuffer
+            texBuffer.SetPixels(colorBuffer);
             texBuffer.Apply();
 
-            Graphics.Blit(texBuffer, renderBuffer, blurMat, 0);
+            // TexBuffer -> nextTexture
 
-            Graphics.Blit(renderBuffer, renderBuffer2, blurMat, 0);
-            Graphics.Blit(renderBuffer2, renderBuffer, blurMat, 0);
+            // Pass 0 : Blur
+            Graphics.Blit(texBuffer,   blurBuffer,  blurMat, 0);
+            Graphics.Blit(blurBuffer,  blurBuffer2, blurMat, 0);
+            Graphics.Blit(blurBuffer2, blurBuffer,  blurMat, 0);
 
-            Graphics.Blit(renderBuffer, nextTexture);
+            Graphics.Blit(blurBuffer, nextTexture);
         }
 
         #endregion

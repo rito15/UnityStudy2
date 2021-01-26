@@ -79,25 +79,31 @@ namespace Rito.FogOfWar
         *                               Fog Renderer
         ***********************************************************************/
         #region .
-        /*private Material _fogMaterial;
+        private Material _fogMaterial;
+        public GameObject _rendererPrefab;
 
         void InitFogTexture()
         {
-            GameObject fogPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            fogPlane.name = "Fog";
+            //GameObject fogPlane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            //fogPlane.name = "Fog";
 
-            Transform fogPlaneTr = fogPlane.transform;
-            fogPlaneTr.SetParent(transform);
-            fogPlaneTr.localPosition = Vector3.zero;
-            fogPlaneTr.localScale =
-                new Vector3(
-                    -_fogWidthX * 0.1f / transform.localScale.x,
-                    1 / transform.localScale.y,
-                    -_fogWidthZ * 0.1f / transform.localScale.z);
+            //Transform fogPlaneTr = fogPlane.transform;
+            //fogPlaneTr.SetParent(transform);
+            //fogPlaneTr.localPosition = Vector3.zero;
+            //fogPlaneTr.localScale =
+            //    new Vector3(
+            //        -_fogWidthX * 0.1f / transform.localScale.x,
+            //        1 / transform.localScale.y,
+            //        -_fogWidthZ * 0.1f / transform.localScale.z);
 
-            MeshRenderer renderer = fogPlaneTr.GetComponent<MeshRenderer>();
-            renderer.material = new Material(Shader.Find("FogOfWar/FogOfWar"));
-            _fogMaterial = renderer.material;
+            //MeshRenderer renderer = fogPlaneTr.GetComponent<MeshRenderer>();
+            //renderer.material = new Material(Shader.Find("FogOfWar/FogOfWar"));
+            //_fogMaterial = renderer.material;
+
+            var renderer = Instantiate(_rendererPrefab, transform);
+            renderer.transform.localPosition = Vector3.zero;
+            renderer.transform.localScale = new Vector3(_fogWidthX * 0.5f, 1, _fogWidthZ * 0.5f);
+            _fogMaterial = renderer.GetComponentInChildren<Renderer>().material;
         }
 
         void UpdateFogTexture()
@@ -106,7 +112,7 @@ namespace Rito.FogOfWar
             {
                 _fogMaterial.SetTexture("_MainTex", Map.FogTexture);
             }
-        }*/
+        }
 
         #endregion
         /***********************************************************************
@@ -114,18 +120,30 @@ namespace Rito.FogOfWar
         ***********************************************************************/
         #region .
 
+        [Space]
         public LayerMask _groundLayer;
-        public float _fogWidthX = 20;
-        public float _fogWidthZ = 20;
-        public float _tileSize = 1; // 타일 하나의 크기
-        public float _updateCycle = 0.5f;
+        public float _fogWidthX = 40;
+        public float _fogWidthZ = 40;
+        public float _tileSize = 1;       // 타일 하나의 크기
+        public float _updateCycle = 0.5f; // 시야 계산 주기
 
+        [System.Serializable]
+        public class FogAlpha
+        {
+            [Range(0, 1)] public float current = 0.0f;
+            [Range(0, 1)] public float visited = 0.8f;
+            [Range(0, 1)] public float never = 1.0f;
+        }
+        [Space]
+        public FogAlpha _fogAlpha = new FogAlpha();
+
+        [Space]
         public bool _showGizmos = true;
 
         public FowMap Map { get; private set; }
 
         /// <summary> 각 타일에 위치한 지형들의 높이 </summary>
-        private float[,] MapHeightData { get; set; }
+        private float[,] HeightMap { get; set; }
         private List<FowUnit> UnitList { get; set; } // Fow 시스템이 추적할 유닛들
 
         #endregion
@@ -138,7 +156,7 @@ namespace Rito.FogOfWar
             CheckInstance();
             UnitList = new List<FowUnit>();
             InitMap();
-            //InitFogTexture();
+            InitFogTexture();
         }
         private void OnEnable()
         {
@@ -148,7 +166,7 @@ namespace Rito.FogOfWar
         private void Update()
         {
             Map.LerpBlur();
-            //UpdateFogTexture();
+            UpdateFogTexture();
         }
 
         private void OnDestroy()
@@ -183,10 +201,10 @@ namespace Rito.FogOfWar
         #region .
         public void InitMap()
         {
-            MapHeightData = new float[(int)(_fogWidthX / _tileSize), (int)(_fogWidthZ / _tileSize)];
-            for (int i = 0; i < MapHeightData.GetLength(0); i++)
+            HeightMap = new float[(int)(_fogWidthX / _tileSize), (int)(_fogWidthZ / _tileSize)];
+            for (int i = 0; i < HeightMap.GetLength(0); i++)
             {
-                for (int j = 0; j < MapHeightData.GetLength(1); j++)
+                for (int j = 0; j < HeightMap.GetLength(1); j++)
                 {
                     var tileCenter = GetTileCenterPoint(i, j);
 
@@ -200,12 +218,12 @@ namespace Rito.FogOfWar
                         height = hit.point.y;
                     }
 
-                    MapHeightData[i, j] = height;
+                    HeightMap[i, j] = height;
                 }
             }
 
             Map = new FowMap();
-            Map.InitMap(MapHeightData);
+            Map.InitMap(HeightMap);
         }
 
         /// <summary> 대상 유닛의 위치를 타일좌표(x, y, height)로 환산 </summary>
@@ -281,16 +299,16 @@ namespace Rito.FogOfWar
 
             if (_showGizmos == false) return;
 
-            if (MapHeightData != null)
+            if (HeightMap != null)
             {
                 // 전체 타일 그리드, 장애물 그리드 보여주기
-                for (int i = 0; i < MapHeightData.GetLength(0); i++)
+                for (int i = 0; i < HeightMap.GetLength(0); i++)
                 {
-                    for (int j = 0; j < MapHeightData.GetLength(1); j++)
+                    for (int j = 0; j < HeightMap.GetLength(1); j++)
                     {
                         Vector2 center = GetTileCenterPoint(i, j);
 
-                        Gizmos.color = new Color(MapHeightData[i, j] - transform.position.y, 0, 0);
+                        Gizmos.color = new Color(HeightMap[i, j] - transform.position.y, 0, 0);
                         Gizmos.DrawWireCube(new Vector3(center.x, transform.position.y, center.y)
                             , new Vector3(_tileSize - 0.02f, 0f, _tileSize - 0.02f));
                     }

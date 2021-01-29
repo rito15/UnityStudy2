@@ -1,6 +1,4 @@
 #if UNITY_EDITOR
-using UnityEngine;
-using UnityEditor;
 
 public class KeywordReplace : UnityEditor.AssetModificationProcessor
 {
@@ -20,8 +18,8 @@ public class KeywordReplace : UnityEditor.AssetModificationProcessor
             return;
 
         // 유니티 에셋 데이터베이스 상의 주소를 실제 주소로 변경
-        index = Application.dataPath.LastIndexOf("Assets");
-        path = Application.dataPath.Substring(0, index) + path;
+        index = UnityEngine.Application.dataPath.LastIndexOf("Assets");
+        path = UnityEngine.Application.dataPath.Substring(0, index) + path;
 
         if (!System.IO.File.Exists(path))
             return;
@@ -36,7 +34,7 @@ public class KeywordReplace : UnityEditor.AssetModificationProcessor
         System.IO.File.WriteAllText(path, fileContent);
 
         // 다하고 나면 꼭 호출
-        AssetDatabase.Refresh();
+        UnityEditor.AssetDatabase.Refresh();
     }
 }
 #endif

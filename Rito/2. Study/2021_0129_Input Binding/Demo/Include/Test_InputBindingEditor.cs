@@ -32,13 +32,35 @@ namespace Rito.InputBindings
                 Debug.Log(t._binding);
             }
 
+            EditorGUILayout.Space();
+
+            if (GUILayout.Button("Reset"))
+            {
+                t._binding.ResetAll();
+            }
+
             if (GUILayout.Button("Save"))
             {
                 t._binding.SaveToFile();
             }
 
-            if (GUILayout.Button("Load"))
+            EditorGUILayout.Space();
+
+            if (GUILayout.Button("Load Preset 001"))
             {
+                t._binding.id = "001";
+                t._binding.LoadFromFile();
+            }
+
+            if (GUILayout.Button("Load Preset 002"))
+            {
+                t._binding.id = "002";
+                t._binding.LoadFromFile();
+            }
+
+            if (GUILayout.Button("Load Preset 003"))
+            {
+                t._binding.id = "003";
                 t._binding.LoadFromFile();
             }
         }

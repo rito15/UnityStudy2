@@ -243,10 +243,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _binding:
-    localDirectoryPath: Rito\2. Study\2021_0129_Input Binding\Presets
+    localDirectoryPath: Rito/2. Study/2021_0129_Input Binding/Presets
     fileName: InputBindingPreset
     extName: txt
-    id: 002
+    id: 001
     showDebug: 1
 --- !u!4 &1262033180
 Transform:

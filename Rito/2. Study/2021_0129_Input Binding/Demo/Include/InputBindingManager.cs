@@ -204,7 +204,7 @@ namespace Rito.InputBindings
 
         private void SetKeyBinding(UserAction action, KeyCode code)
         {
-            _binding.SetBinding(action, code);
+            _binding.Bind(action, code);
             RefreshAllBindingUIs();
         }
 

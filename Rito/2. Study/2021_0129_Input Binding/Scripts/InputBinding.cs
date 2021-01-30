@@ -15,7 +15,7 @@ using System.Text;
 
   * 메소드
     - ResetAll() : 키보드, 마우스 바인딩을 초기 설정 상태로 되돌리기
-    - SetBinding() : 새로운 바인딩 페어 등록 또는 기존 바인딩 변경
+    - Bind() : 새로운 바인딩 페어 등록 또는 기존 바인딩 변경
     - ApplyNewBindings() : 새로운 바인딩 세트 적용
     - Save() : 필드를 통해 지정한 경로에 바인딩 세트 저장
     - Load() : 지정한 경로로부터 바인딩 세트 불러와 적용
@@ -97,26 +97,26 @@ namespace Rito.InputBindings
         /// <summary> 초기 상태로 설정 </summary>
         public void ResetAll()
         {
-            SetBinding(UserAction.Attack,       KeyCode.Mouse0);
+            Bind(UserAction.Attack,       KeyCode.Mouse0);
 
-            SetBinding(UserAction.MoveForward,  KeyCode.W);
-            SetBinding(UserAction.MoveBackward, KeyCode.S);
-            SetBinding(UserAction.MoveLeft,     KeyCode.A);
-            SetBinding(UserAction.MoveRight,    KeyCode.D);
+            Bind(UserAction.MoveForward,  KeyCode.W);
+            Bind(UserAction.MoveBackward, KeyCode.S);
+            Bind(UserAction.MoveLeft,     KeyCode.A);
+            Bind(UserAction.MoveRight,    KeyCode.D);
 
-            SetBinding(UserAction.Run,          KeyCode.LeftControl);
-            SetBinding(UserAction.Jump,         KeyCode.Space);
+            Bind(UserAction.Run,          KeyCode.LeftControl);
+            Bind(UserAction.Jump,         KeyCode.Space);
 
-            SetBinding(UserAction.UI_Inventory, KeyCode.I);
-            SetBinding(UserAction.UI_Status,    KeyCode.P);
-            SetBinding(UserAction.UI_Skill,     KeyCode.K);
+            Bind(UserAction.UI_Inventory, KeyCode.I);
+            Bind(UserAction.UI_Status,    KeyCode.P);
+            Bind(UserAction.UI_Skill,     KeyCode.K);
         }
 
         /// <summary> 바인딩 등록 또는 변경
         /// <para/> - allowOverlap이 false이면 기존 해당 키에 연결된 동작의 키가 존재할 경우 none으로 설정
         /// <para/> - allowOverlap이 true이면 바인딩이 중복되도록 유지
         /// </summary>
-        public void SetBinding(in UserAction action, in KeyCode code, bool allowOverlap = false)
+        public void Bind(in UserAction action, in KeyCode code, bool allowOverlap = false)
         {
             if (!allowOverlap && _bindingDict.ContainsValue(code))
             {

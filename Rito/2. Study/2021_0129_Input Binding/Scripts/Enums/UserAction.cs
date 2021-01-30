@@ -8,9 +8,11 @@ using UnityEngine;
 
 namespace Rito.InputBindings
 {
-    /// <summary> 사용자 키보드 입력에 의한 행동 정의 </summary>
-    public enum UserKeyAction
+    /// <summary> 사용자 입력에 의한 행동 정의 </summary>
+    public enum UserAction
     {
+        Attack,
+
         MoveForward,
         MoveBackward,
         MoveLeft,

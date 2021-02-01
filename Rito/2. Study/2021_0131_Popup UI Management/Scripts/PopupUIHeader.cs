@@ -9,11 +9,10 @@ using UnityEngine.EventSystems;
 // 날짜 : 2021-02-01 AM 2:52:15
 // 작성자 : Rito
 
-namespace Rito
+namespace Rito.PopupUIManagement
 {
     /// <summary> 헤더 드래그 앤 드롭에 의한 UI 이동 구현 </summary>
-    public class PopupUIHeader : MonoBehaviour,
-        IPointerDownHandler, IBeginDragHandler, IDragHandler
+    public class PopupUIHeader : MonoBehaviour, IBeginDragHandler, IDragHandler
     {
         private RectTransform _parentRect;
 
@@ -24,11 +23,6 @@ namespace Rito
         private void Awake()
         {
             _parentRect = transform.parent.GetComponent<RectTransform>();
-        }
-
-        void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
-        {
-            Debug.Log($"Focus {name}");
         }
 
         void IBeginDragHandler.OnBeginDrag(PointerEventData eventData)

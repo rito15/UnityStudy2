@@ -205,8 +205,14 @@ namespace Rito.InputBindings
             }
 
             var sib = JsonUtility.FromJson<SerializableInputBinding>(jsonStr);
-            ApplyNewBindings(sib);
 
+            if (sib == null || sib.bindPairs == null)
+            {
+                Debug.Log("Empty File Loaded");
+                return false;
+            }
+
+            ApplyNewBindings(sib);
             DebugLog($"Load : Assets/{localDirectoryPath}/{fileName}_{id}.{extName}\n\n{this}");
 
             return true;

@@ -1,4 +1,4 @@
-﻿#define DEBUG_RANGE
+﻿//#define DEBUG_RANGE
 
 using System.Collections;
 using System.Collections.Generic;
@@ -252,6 +252,8 @@ namespace Rito.FogOfWar
         #region .
         public IEnumerator UpdateFogRoutine()
         {
+            //var wfs = new WaitForSeconds(_updateCycle);
+
             while (true)
             {
                 if (Map != null)

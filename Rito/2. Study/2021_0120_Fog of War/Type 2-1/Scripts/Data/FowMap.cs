@@ -1,8 +1,10 @@
-#define DEBUG_RANGE
+//#define DEBUG_RANGE
+//#define DETAILED_PROFILE
 
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Rito.FogOfWar
 {
@@ -14,7 +16,8 @@ namespace Rito.FogOfWar
         private int mapHeight;
 
         // 배열들은 타일 개수만큼 크기 생성
-        private Visit[] visit;
+        //private Visit[] visit;
+        private float[] visit;
 
         private Color[] colorBuffer;
         private Material blurMat;
@@ -41,7 +44,8 @@ namespace Rito.FogOfWar
             mapWidth  = heightMap.GetLength(0);
             mapHeight = heightMap.GetLength(1);
 
-            visit       = new Visit[mapWidth * mapHeight];
+            //visit       = new Visit[mapWidth * mapHeight];
+            visit       = new float[mapWidth * mapHeight];
             colorBuffer = new Color[mapWidth * mapHeight];
 
             blurMat = new Material(Shader.Find("FogOfWar/AverageBlur"));
@@ -132,7 +136,8 @@ namespace Rito.FogOfWar
             foreach (FowTile tile in map)
             {
                 int index = tile.index;
-                visit[index].current = false;
+                //visit[index].current = false;
+                visit[index] = FM._fogAlpha.visited;
             }
         }
 
@@ -145,6 +150,10 @@ namespace Rito.FogOfWar
         {
             int sightRangeInt = (int)sightXZ;
             int rangeSquare = sightRangeInt * sightRangeInt;
+
+#if DETAILED_PROFILE
+            Profiler.BeginSample("ComputFog_GetTilesInUnitSight");
+#endif
 
             // 현재 시야(원형 범위)만큼의 타일들 목록
             // x^2 + y^2 <= range^2
@@ -164,27 +173,35 @@ namespace Rito.FogOfWar
                 }
             }
 
+#if DETAILED_PROFILE
+            Profiler.EndSample();
+            Profiler.BeginSample("ComputFog_CalculateVisibleTiles");
+#endif
             // 시야를 밝힐 수 있는 타일들 목록 가져오기
             List<FowTile> visibleTileList =
                 GetVisibleTilesInRange(tilesInSight, pos, sightY);
+
+#if DETAILED_PROFILE
+            Profiler.EndSample();
+#endif
+
 #if DEBUG_RANGE
             visibles = visibleTileList;
 #endif
             // 현재 방문, 과거 방문 여부 true
             foreach (FowTile visibleTile in visibleTileList)
             {
-                visit[visibleTile.index].current = true;
-                visit[visibleTile.index].ever = true;
+                visit[visibleTile.index] = FM._fogAlpha.current;
             }
 
             ApplyFogAlpha();
         }
 
-        #endregion
+#endregion
         /***********************************************************************
         *                               Private Methods
         ***********************************************************************/
-        #region .
+#region .
         /// <summary> 시야 내 타일들 중 중심으로부터 밝힐 수 있는 타일들 가져오기 </summary>
         private List<FowTile> GetVisibleTilesInRange(List<FowTile> tilesInSight, in TilePos centerPos, in float sightHeight)
         {
@@ -393,22 +410,28 @@ namespace Rito.FogOfWar
         /// <summary> 방문 정보를 텍스처의 알파 정보로 변환하고 가우시안 블러 적용 </summary>
         private void ApplyFogAlpha()
         {
+#if DETAILED_PROFILE
+            Profiler.BeginSample("ApplyFogAlpha_CalculateColorBuffer");
+#endif
             foreach (var tile in map)
             {
                 int index = tile.index;
-                float alpha;
 
-                if (visit[index].current)   alpha = FM._fogAlpha.current; // 현재
-                else if (visit[index].ever) alpha = FM._fogAlpha.visited; // 과거
-                else alpha = FM._fogAlpha.never;                          // 미답
-
-                colorBuffer[index].a = alpha;
+                colorBuffer[index].a = visit[index];
             }
 
+#if DETAILED_PROFILE
+            Profiler.EndSample();
+            Profiler.BeginSample("ApplyFogAlpha_SetPixels");
+#endif
             // ColorBuffer -> TexBuffer
             texBuffer.SetPixels(colorBuffer);
             texBuffer.Apply();
 
+#if DETAILED_PROFILE
+            Profiler.EndSample();
+            Profiler.BeginSample("ApplyFogAlpha_Blits");
+#endif
             // TexBuffer -> nextTexture
 
             // Pass 0 : Blur
@@ -417,6 +440,10 @@ namespace Rito.FogOfWar
             Graphics.Blit(blurBuffer2, blurBuffer,  blurMat, 0);
 
             Graphics.Blit(blurBuffer, nextTexture);
+
+#if DETAILED_PROFILE
+            Profiler.EndSample();
+#endif
         }
 
         #endregion

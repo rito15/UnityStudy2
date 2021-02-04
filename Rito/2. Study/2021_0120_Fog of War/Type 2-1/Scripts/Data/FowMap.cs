@@ -141,6 +141,8 @@ namespace Rito.FogOfWar
             }
         }
 
+        List<FowTile> visibleTileList = new List<FowTile>();
+        List<FowTile> tilesInSight = new List<FowTile>();
         /// <summary> 타일 위치로부터 시야만큼 안개 계산 </summary>
         public void ComputeFog(TilePos pos, in float sightXZ, in float sightY
 #if DEBUG_RANGE
@@ -157,7 +159,7 @@ namespace Rito.FogOfWar
 
             // 현재 시야(원형 범위)만큼의 타일들 목록
             // x^2 + y^2 <= range^2
-            var tilesInSight = new List<FowTile>();
+            tilesInSight.Clear();
             for (int i = -sightRangeInt; i <= sightRangeInt; i++)
             {
                 for (int j = -sightRangeInt; j <= sightRangeInt; j++)
@@ -178,7 +180,7 @@ namespace Rito.FogOfWar
             Profiler.BeginSample("ComputFog_CalculateVisibleTiles");
 #endif
             // 시야를 밝힐 수 있는 타일들 목록 가져오기
-            List<FowTile> visibleTileList =
+            visibleTileList =
                 GetVisibleTilesInRange(tilesInSight, pos, sightY);
 
 #if DETAILED_PROFILE
@@ -197,15 +199,16 @@ namespace Rito.FogOfWar
             ApplyFogAlpha();
         }
 
-#endregion
+        #endregion
         /***********************************************************************
         *                               Private Methods
         ***********************************************************************/
-#region .
+        #region .
+        List<FowTile> visibleTiles = new List<FowTile>();
         /// <summary> 시야 내 타일들 중 중심으로부터 밝힐 수 있는 타일들 가져오기 </summary>
         private List<FowTile> GetVisibleTilesInRange(List<FowTile> tilesInSight, in TilePos centerPos, in float sightHeight)
         {
-            List<FowTile> visibleTiles = new List<FowTile>();
+            visibleTiles.Clear();
 
             foreach (FowTile tile in tilesInSight)
             {

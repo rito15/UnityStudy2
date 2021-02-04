@@ -15609,7 +15609,11 @@ MonoBehaviour:
   _fogWidthZ: 40
   _tileSize: 1
   _updateCycle: 0.2
-  _showGizmos: 1
+  _fogAlpha:
+    current: 0
+    visited: 0.8
+    never: 1
+  _showGizmos: 0
 --- !u!4 &2022703077
 Transform:
   m_ObjectHideFlags: 0

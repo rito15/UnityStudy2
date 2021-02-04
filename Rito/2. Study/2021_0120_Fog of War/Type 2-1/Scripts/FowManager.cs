@@ -157,6 +157,8 @@ namespace Rito.FogOfWar
             UnitList = new List<FowUnit>();
             InitMap();
             InitFogTexture();
+
+            Debug.Log(Application.targetFrameRate);
         }
         private void OnEnable()
         {

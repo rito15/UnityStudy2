@@ -76,7 +76,7 @@ namespace Rito.FpsTpsCharacter
             public string paramMoveX = "Move X";
             public string paramMoveZ = "Move Z";
             public string paramDistY = "Dist Y";
-            public string paramAir = "Air";
+            public string paramGrounded = "Grounded";
             public string paramJump = "Jump";
         }
         [Serializable]
@@ -124,7 +124,6 @@ namespace Rito.FpsTpsCharacter
         // Animation Params
         private float _moveX;
         private float _moveZ;
-        private float _distY;
 
         #endregion
 
@@ -363,6 +362,8 @@ namespace Rito.FpsTpsCharacter
                 _worldMove = Com.tpRig.TransformDirection(_moveDir);
             }
 
+            //_currentSpeed = Mathf.Lerp(_currentSpeed, MoveOption.speed, 0.1f);
+
             _worldMove *= (MoveOption.speed) * (State.isRunning ? MoveOption.runningCoef : 1f);
 
             // Y축 속도는 유지하면서 XZ평면 이동
@@ -384,7 +385,7 @@ namespace Rito.FpsTpsCharacter
 
         private void UpdateAnimationParams()
         {
-            float x, y, z;
+            float x, z;
 
             if (State.isCurrentFp)
             {
@@ -408,18 +409,15 @@ namespace Rito.FpsTpsCharacter
                 }
             }
 
-            //y = Com.rBody.velocity.y >= 0f ? 1f : -1f;
-
             // 보간
             const float LerpSpeed = 0.05f;
             _moveX = Mathf.Lerp(_moveX, x, LerpSpeed);
             _moveZ = Mathf.Lerp(_moveZ, z, LerpSpeed);
-            //_distY = Mathf.Lerp(_distY, y, LerpSpeed);
 
             Com.anim.SetFloat(AnimOption.paramMoveX, _moveX);
             Com.anim.SetFloat(AnimOption.paramMoveZ, _moveZ);
             Com.anim.SetFloat(AnimOption.paramDistY, _distFromGround);
-            Com.anim.SetBool(AnimOption.paramAir, !State.isGrounded);
+            Com.anim.SetBool(AnimOption.paramGrounded, State.isGrounded);
         }
 
         private void ShowCursorToggle()
@@ -443,6 +441,22 @@ namespace Rito.FpsTpsCharacter
                 State.isCurrentFp = !State.isCurrentFp;
                 Com.fpCamObject.SetActive(State.isCurrentFp);
                 Com.tpCamObject.SetActive(!State.isCurrentFp);
+
+                // TP -> FP
+                if (State.isCurrentFp)
+                {
+                    Vector3 tpEulerAngle = Com.tpRig.localEulerAngles;
+                    Com.fpRig.localEulerAngles = Vector3.right * tpEulerAngle.x;
+                    Com.fpRoot.localEulerAngles = Vector3.up * tpEulerAngle.y;
+                }
+                // FP -> TP
+                else
+                {
+                    Vector3 newRot = default;
+                    newRot.x = Com.fpRig.localEulerAngles.x;
+                    newRot.y = Com.fpRoot.localEulerAngles.y;
+                    Com.tpRig.localEulerAngles = newRot;
+                }
             }
         }
 

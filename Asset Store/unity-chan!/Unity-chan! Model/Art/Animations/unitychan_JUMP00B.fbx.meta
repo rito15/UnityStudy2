@@ -1826,7 +1826,7 @@ ModelImporter:
     second: JUMPB_END
   - first:
       74: -3255547267771636978
-    second: JUMPB_UP_KEEP
+    second: JUMPB_UP_LOOP
   externalObjects: {}
   materials:
     materialImportMode: 0
@@ -3504,7 +3504,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: JUMPB_UP_KEEP
+      name: JUMPB_UP_LOOP
       takeName: Take 001
       internalID: 0
       firstFrame: 23

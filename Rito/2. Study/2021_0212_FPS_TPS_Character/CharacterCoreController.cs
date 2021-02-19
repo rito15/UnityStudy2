@@ -49,26 +49,57 @@ namespace Rito.FpsTpsCharacter
         {
             [Range(1f, 10f), Tooltip("이동속도")]
             public float speed = 3f;
+
             //[Range(0.01f, 0.3f), Tooltip("이동 가속 계수")]
             //public float acceleration = 0.1f;
+
             [Range(1f, 3f), Tooltip("달리기 이동속도 증가 계수")]
             public float runningCoef = 1.5f;
+
             [Range(1f, 10f), Tooltip("점프 강도")]
             public float jumpForce = 5.5f;
+
             [Tooltip("지면으로 체크할 레이어 설정")]
             public LayerMask groundLayerMask = -1;
+
+            [Range(0.0f, 2.0f), Tooltip("점프 쿨타임")]
+            public float jumpCooldown = 1.0f;
+        }
+        [Serializable]
+        public class CheckOption
+        {
+            [Range(0.1f, 4.0f), Tooltip("전방 감지 거리")]
+            public float forwardCheckDist = 1.0f;
+
+            [Range(0.1f, 4.0f), Tooltip("하단 감지 거리 - 이동벡터 회전용")]
+            public float downCheckDist = 2.0f;
         }
         [Serializable]
         public class CameraOption
         {
             [Tooltip("게임 시작 시 카메라")]
             public CameraType initialCamera;
+
             [Range(1f, 10f), Tooltip("카메라 상하좌우 회전 속도")]
             public float rotationSpeed = 2f;
+
             [Range(-90f, 0f), Tooltip("올려다보기 제한 각도")]
             public float lookUpDegree = -60f;
+
             [Range(0f, 75f), Tooltip("내려다보기 제한 각도")]
             public float lookDownDegree = 75f;
+
+            [Range(0f, 3.5f), Space, Tooltip("줌 확대 최대 거리")]
+            public float zoomInDistance = 3f;
+
+            [Range(0f, 5f), Tooltip("줌 축소 최대 거리")]
+            public float zoomOutDistance = 3f;
+
+            [Range(1f, 30f), Tooltip("줌 속도")]
+            public float zoomSpeed = 20f;
+
+            [Range(0.01f, 0.5f), Tooltip("줌 가속")]
+            public float zoomAccel = 0.1f;
         }
         [Serializable]
         public class AnimatorOption
@@ -96,27 +127,35 @@ namespace Rito.FpsTpsCharacter
         #region .
         public Components Com => _components;
         public KeyOption Key => _keyOption;
+        public CheckOption Check => _checkOption;
         public MovementOption MoveOption => _movementOption;
         public CameraOption   CamOption  => _cameraOption;
         public AnimatorOption AnimOption => _animatorOption;
         public CharacterState State => _state;
 
         [SerializeField] private Components _components = new Components();
-        [Space]
-        [SerializeField] private KeyOption _keyOption = new KeyOption();
-        [Space]
-        [SerializeField] private MovementOption _movementOption = new MovementOption();
-        [Space]
-        [SerializeField] private CameraOption   _cameraOption   = new CameraOption();
-        [Space]
-        [SerializeField] private AnimatorOption _animatorOption = new AnimatorOption();
-        [Space]
-        [SerializeField] private CharacterState _state = new CharacterState();
+        [Space, SerializeField] private KeyOption _keyOption = new KeyOption();
+        [Space, SerializeField] private CheckOption _checkOption = new CheckOption();
+        [Space, SerializeField] private MovementOption _movementOption = new MovementOption();
+        [Space, SerializeField] private CameraOption   _cameraOption   = new CameraOption();
+        [Space, SerializeField] private AnimatorOption _animatorOption = new AnimatorOption();
+        [Space, SerializeField] private CharacterState _state = new CharacterState();
 
+        /// <summary> Time.deltaTime 항상 저장 </summary>
+        private float _deltaTime;
+
+        /// <summary> 키보드 WASD 입력으로 얻는 로컬 이동 벡터 </summary>
+        [SerializeField]
         private Vector3 _moveDir;
+
+        /// <summary> 월드 이동 벡터 </summary>
         private Vector3 _worldMove;
+
+        /// <summary> 마우스 움직임을 통해 얻는 회전 값 </summary>
         private Vector2 _rotation;
-        private float _groundCheckRadius;
+
+        /// <summary> 지면을 향하는 SphereCast 반지름 </summary>
+        [SerializeField] private float _groundCheckRadius;
 
         [SerializeField]
         private float _distFromGround;
@@ -124,6 +163,19 @@ namespace Rito.FpsTpsCharacter
         // Animation Params
         private float _moveX;
         private float _moveZ;
+
+
+        /// <summary> TP 카메라 ~ Rig 초기 거리 </summary>
+        private float _tpCamZoomInitialDistance;
+
+        /// <summary> TP 카메라 휠 입력 값 </summary>
+        private float _tpCameraWheelInput = 0;
+
+        /// <summary> 선형보간된 현재 휠 입력 값 </summary>
+        private float _currentWheel;
+
+        private float _currentJumpCooldown;
+
 
         #endregion
 
@@ -139,16 +191,23 @@ namespace Rito.FpsTpsCharacter
 
         private void Update()
         {
+            _deltaTime = Time.deltaTime;
+
+            // 1. Check, Key Input
             ShowCursorToggle();
             CameraViewToggle();
             SetValuesByKeyInput();
             CheckDistanceFromGround();
 
+            // 2. Behaviors, Camera Actions
             Rotate();
             Move();
             Jump();
+            TpCameraZoom();
 
+            // 3. Updates
             UpdateAnimationParams();
+            UpdateCurrentValues();
         }
 
         #endregion
@@ -192,12 +251,15 @@ namespace Rito.FpsTpsCharacter
 
             // 지면 체크 반지름 설정 : 캡슐 콜라이더 기반
             TryGetComponent(out CapsuleCollider cCol);
-            _groundCheckRadius = cCol ? cCol.radius : 0.1f;
-        }
+            _groundCheckRadius = cCol ? cCol.radius * 0.3f : 0.1f;
 
+            // Zoom
+            _tpCamZoomInitialDistance = Vector3.Distance(Com.tpRig.position, Com.tpCamera.transform.position);
+        }
+        
         #endregion
         /***********************************************************************
-        *                               Checker Methods
+        *                               Check Methods
         ***********************************************************************/
         #region .
         private void LogNotInitializedComponentError<T>(T component, string componentName) where T : Component
@@ -223,6 +285,65 @@ namespace Rito.FpsTpsCharacter
             State.isGrounded = _distFromGround <= _groundCheckRadius + threshold;
         }
 
+        private void CheckForwardAndAdjustMoveVector()
+        {
+            if(State.isGrounded) return;
+
+            Vector3 ro = transform.position + new Vector3(0, 0.1f, 0);
+            Vector3 fwd = Com.fpRoot.forward;
+
+            Vector3[] rds = { 
+                fwd,
+                Quaternion.Euler(new Vector3(0f,  30f, 0f)) * fwd,
+                Quaternion.Euler(new Vector3(0f, -30f, 0f)) * fwd,
+                Quaternion.Euler(new Vector3(0f,  60f, 0f)) * fwd,
+                Quaternion.Euler(new Vector3(0f, -60f, 0f)) * fwd
+            };
+
+            float[] dists = {
+                Check.forwardCheckDist,
+                Check.forwardCheckDist * 0.9f,
+                Check.forwardCheckDist * 0.9f,
+                Check.forwardCheckDist * 0.7f,
+                Check.forwardCheckDist * 0.7f
+            };
+
+            for (int i = 0; i < rds.Length; i++)
+            {
+                bool rayCast = Physics.Raycast(ro, rds[i], out var hit, dists[i], -1);
+                if (rayCast)
+                {
+                    _moveDir = Vector3.zero;
+                    Debug.DrawRay(ro, hit.point - ro, Color.red, 0.1f);
+
+                    break;
+                }
+            }
+        }
+
+        //private void CheckForwardAndAdjustMoveVector()
+        //{
+        //    if(State.isGrounded) return;
+
+        //    const float threshold = 0.5f;
+
+        //    Vector3 ro = transform.position + new Vector3(0, 0.0f, 0);
+        //    Vector3 rd = Com.fpRoot.forward;
+
+        //    bool rayCast = Physics.Raycast(ro, rd, out var hit, Check.forwardCheckDist, -1);
+        //    if (rayCast)
+        //    {
+        //        float yAxisDot = hit.distance < threshold ? 
+        //            Vector3.Dot(Vector3.up, hit.normal) : 1f;
+
+        //        float ratio = Mathf.Max(0f, (hit.distance)) / Check.forwardCheckDist;
+
+        //        _moveDir *= ratio * yAxisDot;
+
+        //        Debug.DrawRay(ro, hit.point - ro, Color.red, 0.1f);
+        //    }
+        //}
+
         #endregion
         /***********************************************************************
         *                               Methods
@@ -241,8 +362,12 @@ namespace Rito.FpsTpsCharacter
             _moveDir = new Vector3(h, 0f, v).normalized;
             _rotation = new Vector2(Input.GetAxisRaw("Mouse X"), -Input.GetAxisRaw("Mouse Y"));
 
-            State.isMoving = h != 0 || v != 0;
+            State.isMoving = _moveDir.sqrMagnitude > 0.1f;//h != 0 || v != 0;
             State.isRunning = Input.GetKey(Key.run);
+
+            // Wheel
+            _tpCameraWheelInput = Input.GetAxisRaw("Mouse ScrollWheel");
+            _currentWheel = Mathf.Lerp(_currentWheel, _tpCameraWheelInput, CamOption.zoomAccel);
         }
 
         private void Rotate()
@@ -263,7 +388,7 @@ namespace Rito.FpsTpsCharacter
         /// <summary> 1인칭 회전 </summary>
         private void RotateFP()
         {
-            float deltaCoef = Time.deltaTime * 50f;
+            float deltaCoef = _deltaTime * 50f;
 
             // 상하 : FP Rig 회전
             float xRotPrev = Com.fpRig.localEulerAngles.x;
@@ -294,7 +419,7 @@ namespace Rito.FpsTpsCharacter
         /// <summary> 3인칭 회전 </summary>
         private void RotateTP()
         {
-            float deltaCoef = Time.deltaTime * 50f;
+            float deltaCoef = _deltaTime * 50f;
 
             // 상하 : TP Rig 회전
             float xRotPrev = Com.tpRig.localEulerAngles.x;
@@ -343,12 +468,14 @@ namespace Rito.FpsTpsCharacter
 
         private void Move()
         {
+            CheckForwardAndAdjustMoveVector();
+
             // 이동하지 않는 경우, 미끄럼 방지
-            if (State.isMoving == false)
-            {
-                Com.rBody.velocity = new Vector3(0f, Com.rBody.velocity.y, 0f);
-                return;
-            }
+            //if (State.isMoving == false)
+            //{
+            //    Com.rBody.velocity = new Vector3(0f, Com.rBody.velocity.y, 0f);
+            //    return;
+            //}
 
             // 실제 이동 벡터 계산
             // 1인칭
@@ -373,51 +500,23 @@ namespace Rito.FpsTpsCharacter
         private void Jump()
         {
             if (!State.isGrounded) return;
+            if (_currentJumpCooldown > 0f) return; // 점프 쿨타임
 
             if (Input.GetKeyDown(Key.jump))
             {
+                Debug.Log("JUMP");
+
+                // 하강 중 점프 시 속도가 합산되지 않도록 속도 초기화
+                Com.rBody.velocity = Vector3.zero;
+
                 Com.rBody.AddForce(Vector3.up * MoveOption.jumpForce, ForceMode.VelocityChange);
 
                 // 애니메이션 점프 트리거
                 Com.anim.SetTrigger(AnimOption.paramJump);
+
+                // 쿨타임 초기화
+                _currentJumpCooldown = MoveOption.jumpCooldown;
             }
-        }
-
-        private void UpdateAnimationParams()
-        {
-            float x, z;
-
-            if (State.isCurrentFp)
-            {
-                x = _moveDir.x;
-                z = _moveDir.z;
-
-                if (State.isRunning)
-                {
-                    x *= 2f;
-                    z *= 2f;
-                }
-            }
-            else
-            {
-                x = 0f;
-                z = _moveDir.sqrMagnitude > 0f ? 1f : 0f;
-
-                if (State.isRunning)
-                {
-                    z *= 2f;
-                }
-            }
-
-            // 보간
-            const float LerpSpeed = 0.05f;
-            _moveX = Mathf.Lerp(_moveX, x, LerpSpeed);
-            _moveZ = Mathf.Lerp(_moveZ, z, LerpSpeed);
-
-            Com.anim.SetFloat(AnimOption.paramMoveX, _moveX);
-            Com.anim.SetFloat(AnimOption.paramMoveZ, _moveZ);
-            Com.anim.SetFloat(AnimOption.paramDistY, _distFromGround);
-            Com.anim.SetBool(AnimOption.paramGrounded, State.isGrounded);
         }
 
         private void ShowCursorToggle()
@@ -458,6 +557,80 @@ namespace Rito.FpsTpsCharacter
                     Com.tpRig.localEulerAngles = newRot;
                 }
             }
+        }
+
+        private void TpCameraZoom()
+        {
+            if (State.isCurrentFp) return;                // TP 카메라만 가능
+            if (Mathf.Abs(_currentWheel) < 0.01f) return; // 휠 입력 있어야 가능
+
+            Transform tpCamTr = Com.tpCamera.transform;
+            Transform tpCamRig = Com.tpRig;
+
+            float zoom = _deltaTime * CamOption.zoomSpeed;
+            float currentCamToRigDist = Vector3.Distance(tpCamTr.position, tpCamRig.position);
+            Vector3 move = Vector3.forward * zoom * _currentWheel * 10f;
+
+            // Zoom In
+            if (_currentWheel > 0.01f)
+            {
+                if (_tpCamZoomInitialDistance - currentCamToRigDist < CamOption.zoomInDistance)
+                {
+                    tpCamTr.Translate(move, Space.Self);
+                }
+            }
+            // Zoom Out
+            else if (_currentWheel < -0.01f)
+            {
+
+                if (currentCamToRigDist - _tpCamZoomInitialDistance < CamOption.zoomOutDistance)
+                {
+                    tpCamTr.Translate(move, Space.Self);
+                }
+            }
+        }
+
+        private void UpdateAnimationParams()
+        {
+            float x, z;
+
+            if (State.isCurrentFp)
+            {
+                x = _moveDir.x;
+                z = _moveDir.z;
+
+                if (State.isRunning)
+                {
+                    x *= 2f;
+                    z *= 2f;
+                }
+            }
+            else
+            {
+                x = 0f;
+                z = _moveDir.sqrMagnitude > 0f ? 1f : 0f;
+
+                if (State.isRunning)
+                {
+                    z *= 2f;
+                }
+            }
+
+            // 보간
+            const float LerpSpeed = 0.05f;
+            _moveX = Mathf.Lerp(_moveX, x, LerpSpeed);
+            _moveZ = Mathf.Lerp(_moveZ, z, LerpSpeed);
+
+            Com.anim.SetFloat(AnimOption.paramMoveX, _moveX);
+            Com.anim.SetFloat(AnimOption.paramMoveZ, _moveZ);
+            Com.anim.SetFloat(AnimOption.paramDistY, _distFromGround);
+            Com.anim.SetBool(AnimOption.paramGrounded, State.isGrounded);
+        }
+
+        private void UpdateCurrentValues()
+        {
+            if(_currentJumpCooldown > 0f)
+                _currentJumpCooldown -= _deltaTime;
         }
 
         #endregion

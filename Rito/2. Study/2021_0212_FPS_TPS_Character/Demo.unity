@@ -8020,7 +8020,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 578180492}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -17, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 826925308}
@@ -8054,7 +8054,7 @@ CapsuleCollider:
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
-  m_Radius: 0.3
+  m_Radius: 0.2
   m_Height: 1.6
   m_Direction: 1
   m_Center: {x: 0, y: 0.8, z: 0}
@@ -8089,18 +8089,26 @@ MonoBehaviour:
     jump: 32
     switchCamera: 9
     showCursor: 308
+  _checkOption:
+    forwardCheckDist: 0.5
+    downCheckDist: 2
   _movementOption:
-    speed: 3
+    speed: 5
     runningCoef: 1.5
     jumpForce: 5.5
     groundLayerMask:
       serializedVersion: 2
       m_Bits: 4294967295
+    jumpCooldown: 1
   _cameraOption:
     initialCamera: 0
     rotationSpeed: 2
     lookUpDegree: -60
     lookDownDegree: 75
+    zoomInDistance: 3
+    zoomOutDistance: 3
+    zoomSpeed: 20
+    zoomAccel: 0.1
   _animatorOption:
     paramMoveX: Move X
     paramMoveZ: Move Z
@@ -8113,6 +8121,8 @@ MonoBehaviour:
     isRunning: 0
     isGrounded: 0
     isCursorActive: 0
+  _moveDir: {x: 0, y: 0, z: 0}
+  _groundCheckRadius: 0
   _distFromGround: 0
 --- !u!1 &652340475
 GameObject:

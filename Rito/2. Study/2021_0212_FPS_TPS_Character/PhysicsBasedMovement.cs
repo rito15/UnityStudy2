@@ -37,7 +37,7 @@ namespace Rito.FpsTpsCharacter
             [Range(0.01f, 0.3f), Tooltip("전방 감지 거리")]
             public float forwardCheckDistance = 0.1f;
 
-            [Range(15f, 60f), Tooltip("등반 가능한 경사각")]
+            [Range(15f, 70f), Tooltip("등반 가능한 경사각")]
             public float maxSlopeAngle = 50f;
 
             [Range(1f, 3f), Tooltip("경사로 이동속도 변화율")]
@@ -64,6 +64,7 @@ namespace Rito.FpsTpsCharacter
             public bool isMoving;
             public bool isRunning;
             public bool isGrounded;
+            public bool isOnSteepSlope; // 등반 불가능한 경사로에 올라와 있음
             public bool isJumpTriggered;
             public bool isForwardBlocked;
         }
@@ -75,6 +76,7 @@ namespace Rito.FpsTpsCharacter
             public Vector3 groundCross;
             public Vector3 finalVelocity;
 
+            public float groundDistance;
             public float jumpCooldown;
             public float groundSlopeAngle;  // 현재 바닥의 경사각
             public float forwardSlopeAngle; // 캐릭터가 바라보는 방향의 경사각
@@ -192,6 +194,7 @@ namespace Rito.FpsTpsCharacter
 
         private void CheckGround()
         {
+            Current.groundDistance = float.MaxValue;
             Current.groundNormal = Vector3.up;
             Current.groundSlopeAngle = 0f;
             Current.forwardSlopeAngle = 0f;
@@ -209,11 +212,13 @@ namespace Rito.FpsTpsCharacter
                 Current.groundSlopeAngle = Vector3.Angle(Current.groundNormal, Vector3.up);
                 Current.forwardSlopeAngle = Vector3.Angle(Current.groundNormal, Com.walker.forward) - 90f;
 
+                State.isOnSteepSlope = Current.groundSlopeAngle >= COption.maxSlopeAngle;
                 State.isGrounded = 
-                    (hit.distance < _capsuleHeightDiff) &&
-                    Current.groundSlopeAngle < COption.maxSlopeAngle;
+                    (hit.distance < _capsuleHeightDiff) && !State.isOnSteepSlope;
 
                 _groundTouch = hit.point;
+
+                Current.groundDistance = transform.position.y - hit.point.y;
             }
 
             // 월드 이동벡터 회전축
@@ -232,12 +237,28 @@ namespace Rito.FpsTpsCharacter
 
                 float frontObstacleAngle = Vector3.Angle(hit.normal, Vector3.up);
 
-                State.isForwardBlocked = frontObstacleAngle > COption.maxSlopeAngle;
+                State.isForwardBlocked = frontObstacleAngle >= COption.maxSlopeAngle;
             }
         }
 
         private void Move()
         {
+            // 0. 가파른 경사면에 있는 경우 : 꼼짝말고 미끄럼틀 타기 - 계단 내려갈 때도 영향줌..
+            //if (State.isOnSteepSlope && Current.groundDistance < 0.5f)
+            //{
+            //    Current.finalVelocity = Vector3.down * 9.8f;
+
+            //    _slideDir =
+            //        Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down;
+
+            //    Current.finalVelocity =
+            //        Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
+
+            //    Com.rBody.velocity = Current.finalVelocity;
+
+            //    return;
+            //}
+
             // 1. 속력 계산
             float speed = 0f;
             if (State.isMoving)
@@ -248,7 +269,7 @@ namespace Rito.FpsTpsCharacter
             }
 
             // 2. XZ 이동속도 계산
-            if (State.isForwardBlocked) // 전방 이동 불가능한 경우
+            if (State.isForwardBlocked && !State.isGrounded) // 전방 이동 불가능한 경우
             {
                 Current.finalVelocity = Vector3.zero;
             }
@@ -308,6 +329,8 @@ namespace Rito.FpsTpsCharacter
         private Vector3 _groundTouch;
         private Vector3 _forwardTouch;
         private Vector3 _rotatedWorldMoveDir;
+        
+        private Vector3 _slideDir; // 가파른 경사면에서 미끄럼틀 탈 방향
 
         [Header("Gizmos Option"), SerializeField, Range(0.1f, 2f)]
         private float _gizmoRadius = 0.1f;
@@ -319,14 +342,23 @@ namespace Rito.FpsTpsCharacter
             Gizmos.color = Color.red;
             Gizmos.DrawSphere(_groundTouch, _gizmoRadius);
 
-            Gizmos.color = Color.blue;
-            Gizmos.DrawSphere(_forwardTouch, _gizmoRadius);
+            if (State.isForwardBlocked)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawSphere(_forwardTouch, _gizmoRadius);
+            }
 
             Gizmos.color = Color.green;
             Gizmos.DrawLine(_groundTouch, _groundTouch + Current.groundCross * 2f);
 
             Gizmos.color = Color.black;
             Gizmos.DrawLine(transform.position, transform.position + _rotatedWorldMoveDir);
+
+            if (State.isOnSteepSlope)
+            {
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(transform.position, transform.position + _slideDir);
+            }
         }
 
         #endregion

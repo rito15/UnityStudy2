@@ -8020,7 +8020,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 578180492}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17, y: 0, z: 0}
+  m_LocalPosition: {x: 2.74, y: 0, z: 18.37}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 826925308}
@@ -8091,7 +8091,7 @@ MonoBehaviour:
     switchCamera: 9
     showCursor: 308
   _cameraOption:
-    initialCamera: 0
+    initialCamera: 1
     rotationSpeed: 2
     lookUpDegree: -60
     lookDownDegree: 75

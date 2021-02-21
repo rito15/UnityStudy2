@@ -22,15 +22,16 @@ namespace Rito.FpsTpsCharacter
             public Camera tpCamera;
             public Camera fpCamera;
 
+            [HideInInspector] public Transform tpRoot;
             [HideInInspector] public Transform tpRig;
-            [HideInInspector] public Transform fpRoot;
+            [HideInInspector] public Transform walker;
             [HideInInspector] public Transform fpRig;
 
             [HideInInspector] public GameObject tpCamObject;
             [HideInInspector] public GameObject fpCamObject;
 
-            [HideInInspector] public Rigidbody rBody;
             [HideInInspector] public Animator anim;
+            [HideInInspector] public PhysicsBasedMovement pbMove;
         }
         [Serializable]
         public class KeyOption
@@ -43,36 +44,6 @@ namespace Rito.FpsTpsCharacter
             public KeyCode jump = KeyCode.Space;
             public KeyCode switchCamera = KeyCode.Tab;
             public KeyCode showCursor = KeyCode.LeftAlt;
-        }
-        [Serializable]
-        public class MovementOption
-        {
-            [Range(1f, 10f), Tooltip("이동속도")]
-            public float speed = 3f;
-
-            //[Range(0.01f, 0.3f), Tooltip("이동 가속 계수")]
-            //public float acceleration = 0.1f;
-
-            [Range(1f, 3f), Tooltip("달리기 이동속도 증가 계수")]
-            public float runningCoef = 1.5f;
-
-            [Range(1f, 10f), Tooltip("점프 강도")]
-            public float jumpForce = 5.5f;
-
-            [Tooltip("지면으로 체크할 레이어 설정")]
-            public LayerMask groundLayerMask = -1;
-
-            [Range(0.0f, 2.0f), Tooltip("점프 쿨타임")]
-            public float jumpCooldown = 1.0f;
-        }
-        [Serializable]
-        public class CheckOption
-        {
-            [Range(0.1f, 4.0f), Tooltip("전방 감지 거리")]
-            public float forwardCheckDist = 1.0f;
-
-            [Range(0.1f, 4.0f), Tooltip("하단 감지 거리 - 이동벡터 회전용")]
-            public float downCheckDist = 2.0f;
         }
         [Serializable]
         public class CameraOption
@@ -127,16 +98,12 @@ namespace Rito.FpsTpsCharacter
         #region .
         public Components Com => _components;
         public KeyOption Key => _keyOption;
-        public CheckOption Check => _checkOption;
-        public MovementOption MoveOption => _movementOption;
         public CameraOption   CamOption  => _cameraOption;
         public AnimatorOption AnimOption => _animatorOption;
         public CharacterState State => _state;
 
         [SerializeField] private Components _components = new Components();
         [Space, SerializeField] private KeyOption _keyOption = new KeyOption();
-        [Space, SerializeField] private CheckOption _checkOption = new CheckOption();
-        [Space, SerializeField] private MovementOption _movementOption = new MovementOption();
         [Space, SerializeField] private CameraOption   _cameraOption   = new CameraOption();
         [Space, SerializeField] private AnimatorOption _animatorOption = new AnimatorOption();
         [Space, SerializeField] private CharacterState _state = new CharacterState();
@@ -144,18 +111,9 @@ namespace Rito.FpsTpsCharacter
         /// <summary> Time.deltaTime 항상 저장 </summary>
         private float _deltaTime;
 
-        /// <summary> 키보드 WASD 입력으로 얻는 로컬 이동 벡터 </summary>
-        [SerializeField]
-        private Vector3 _moveDir;
-
-        /// <summary> 월드 이동 벡터 </summary>
-        private Vector3 _worldMove;
-
         /// <summary> 마우스 움직임을 통해 얻는 회전 값 </summary>
         private Vector2 _rotation;
 
-        /// <summary> 지면을 향하는 SphereCast 반지름 </summary>
-        [SerializeField] private float _groundCheckRadius;
 
         [SerializeField]
         private float _distFromGround;
@@ -174,8 +132,17 @@ namespace Rito.FpsTpsCharacter
         /// <summary> 선형보간된 현재 휠 입력 값 </summary>
         private float _currentWheel;
 
-        private float _currentJumpCooldown;
 
+
+        // Current Movement Variables
+
+        /// <summary> 키보드 WASD 입력으로 얻는 로컬 이동 벡터 </summary>
+        [SerializeField]
+        private Vector3 _moveDir;
+
+        /// <summary> 월드 이동 벡터 </summary>
+        [SerializeField]
+        private Vector3 _worldMoveDir;
 
         #endregion
 
@@ -197,17 +164,14 @@ namespace Rito.FpsTpsCharacter
             ShowCursorToggle();
             CameraViewToggle();
             SetValuesByKeyInput();
-            CheckDistanceFromGround();
 
             // 2. Behaviors, Camera Actions
             Rotate();
-            Move();
-            Jump();
             TpCameraZoom();
 
             // 3. Updates
+            CheckGroundDistance();
             UpdateAnimationParams();
-            UpdateCurrentValues();
         }
 
         #endregion
@@ -219,42 +183,40 @@ namespace Rito.FpsTpsCharacter
         {
             LogNotInitializedComponentError(Com.tpCamera, "TP Camera");
             LogNotInitializedComponentError(Com.fpCamera, "FP Camera");
-            TryGetComponent(out Com.rBody);
+            
             Com.anim = GetComponentInChildren<Animator>();
 
             Com.tpCamObject = Com.tpCamera.gameObject;
             Com.tpRig = Com.tpCamera.transform.parent;
+            Com.tpRoot = Com.tpRig.parent;
+
             Com.fpCamObject = Com.fpCamera.gameObject;
             Com.fpRig = Com.fpCamera.transform.parent;
-            Com.fpRoot = Com.fpRig.parent;
+            Com.walker = Com.fpRig.parent;
+
+            TryGetComponent(out Com.pbMove);
+            if(Com.pbMove == null)
+                Com.pbMove = gameObject.AddComponent<PhysicsBasedMovement>();
         }
 
         private void InitSettings()
         {
-            // Rigidbody
-            if (Com.rBody)
-            {
-                // 회전은 트랜스폼을 통해 직접 제어할 것이기 때문에 리지드바디 회전은 제한
-                Com.rBody.constraints = RigidbodyConstraints.FreezeRotation;
-            }
-
-            // Camera
+            // 모든 카메라 게임오브젝트 비활성화
             var allCams = FindObjectsOfType<Camera>();
             foreach (var cam in allCams)
             {
                 cam.gameObject.SetActive(false);
             }
+
             // 설정한 카메라 하나만 활성화
             State.isCurrentFp = (CamOption.initialCamera == CameraType.FpCamera);
             Com.fpCamObject.SetActive(State.isCurrentFp);
             Com.tpCamObject.SetActive(!State.isCurrentFp);
 
-            // 지면 체크 반지름 설정 : 캡슐 콜라이더 기반
-            TryGetComponent(out CapsuleCollider cCol);
-            _groundCheckRadius = cCol ? cCol.radius * 0.3f : 0.1f;
-
             // Zoom
             _tpCamZoomInitialDistance = Vector3.Distance(Com.tpRig.position, Com.tpCamera.transform.position);
+
+            Com.pbMove.SetWalker(Com.walker);
         }
         
         #endregion
@@ -267,82 +229,6 @@ namespace Rito.FpsTpsCharacter
             if(component == null)
                 Debug.LogError($"{componentName} 컴포넌트를 인스펙터에 넣어주세요");
         }
-
-        /// <summary> 땅으로부터의 거리 체크 </summary>
-        private void CheckDistanceFromGround()
-        {
-            Vector3 ro = transform.position + Vector3.up;
-            Vector3 rd = Vector3.down;
-            Ray ray = new Ray(ro, rd);
-
-            const float rayDist = 500f;
-            const float threshold = 0.01f;
-
-            bool cast =
-                Physics.SphereCast(ray, _groundCheckRadius, out var hit, rayDist, MoveOption.groundLayerMask);
-
-            _distFromGround = cast ? (hit.distance - 1f + _groundCheckRadius) : float.MaxValue;
-            State.isGrounded = _distFromGround <= _groundCheckRadius + threshold;
-        }
-
-        private void CheckForwardAndAdjustMoveVector()
-        {
-            if(State.isGrounded) return;
-
-            Vector3 ro = transform.position + new Vector3(0, 0.1f, 0);
-            Vector3 fwd = Com.fpRoot.forward;
-
-            Vector3[] rds = { 
-                fwd,
-                Quaternion.Euler(new Vector3(0f,  30f, 0f)) * fwd,
-                Quaternion.Euler(new Vector3(0f, -30f, 0f)) * fwd,
-                Quaternion.Euler(new Vector3(0f,  60f, 0f)) * fwd,
-                Quaternion.Euler(new Vector3(0f, -60f, 0f)) * fwd
-            };
-
-            float[] dists = {
-                Check.forwardCheckDist,
-                Check.forwardCheckDist * 0.9f,
-                Check.forwardCheckDist * 0.9f,
-                Check.forwardCheckDist * 0.7f,
-                Check.forwardCheckDist * 0.7f
-            };
-
-            for (int i = 0; i < rds.Length; i++)
-            {
-                bool rayCast = Physics.Raycast(ro, rds[i], out var hit, dists[i], -1);
-                if (rayCast)
-                {
-                    _moveDir = Vector3.zero;
-                    Debug.DrawRay(ro, hit.point - ro, Color.red, 0.1f);
-
-                    break;
-                }
-            }
-        }
-
-        //private void CheckForwardAndAdjustMoveVector()
-        //{
-        //    if(State.isGrounded) return;
-
-        //    const float threshold = 0.5f;
-
-        //    Vector3 ro = transform.position + new Vector3(0, 0.0f, 0);
-        //    Vector3 rd = Com.fpRoot.forward;
-
-        //    bool rayCast = Physics.Raycast(ro, rd, out var hit, Check.forwardCheckDist, -1);
-        //    if (rayCast)
-        //    {
-        //        float yAxisDot = hit.distance < threshold ? 
-        //            Vector3.Dot(Vector3.up, hit.normal) : 1f;
-
-        //        float ratio = Mathf.Max(0f, (hit.distance)) / Check.forwardCheckDist;
-
-        //        _moveDir *= ratio * yAxisDot;
-
-        //        Debug.DrawRay(ro, hit.point - ro, Color.red, 0.1f);
-        //    }
-        //}
 
         #endregion
         /***********************************************************************
@@ -359,11 +245,18 @@ namespace Rito.FpsTpsCharacter
             if (Input.GetKey(Key.moveLeft)) h -= 1.0f;
             if (Input.GetKey(Key.moveRight)) h += 1.0f;
 
-            _moveDir = new Vector3(h, 0f, v).normalized;
+            // Move, Rotate
+            SendMoveInfo(h, v);
             _rotation = new Vector2(Input.GetAxisRaw("Mouse X"), -Input.GetAxisRaw("Mouse Y"));
 
-            State.isMoving = _moveDir.sqrMagnitude > 0.1f;//h != 0 || v != 0;
+            State.isMoving = h != 0 || v != 0;
             State.isRunning = Input.GetKey(Key.run);
+
+            // Jump
+            if (Input.GetKeyDown(Key.jump))
+            {
+                Jump();
+            }
 
             // Wheel
             _tpCameraWheelInput = Input.GetAxisRaw("Mouse ScrollWheel");
@@ -372,34 +265,37 @@ namespace Rito.FpsTpsCharacter
 
         private void Rotate()
         {
+            Transform root, rig;
+
+            // 1인칭
             if (State.isCurrentFp)
             {
-                if(!State.isCursorActive)
-                    RotateFP();
+                root = Com.walker;
+                rig = Com.fpRig;
             }
+            // 3인칭
             else
             {
-                if (!State.isCursorActive)
-                    RotateTP();
-                RotateFPRoot();
+                root = Com.tpRoot;
+                rig = Com.tpRig;
+                RotateWalker(); // 3인칭일 경우 Walker를 이동방향으로 회전
             }
-        }
+            
+            if(State.isCursorActive) return;
 
-        /// <summary> 1인칭 회전 </summary>
-        private void RotateFP()
-        {
+            // 회전 ==========================================================
             float deltaCoef = _deltaTime * 50f;
 
-            // 상하 : FP Rig 회전
-            float xRotPrev = Com.fpRig.localEulerAngles.x;
+            // 상하 : Rig 회전
+            float xRotPrev = rig.localEulerAngles.x;
             float xRotNext = xRotPrev + _rotation.y
                 * CamOption.rotationSpeed * deltaCoef;
 
             if (xRotNext > 180f)
                 xRotNext -= 360f;
 
-            // 좌우 : FP Root 회전
-            float yRotPrev = Com.fpRoot.localEulerAngles.y;
+            // 좌우 : Root 회전
+            float yRotPrev = root.localEulerAngles.y;
             float yRotNext =
                 yRotPrev + _rotation.x
                 * CamOption.rotationSpeed * deltaCoef;
@@ -409,114 +305,26 @@ namespace Rito.FpsTpsCharacter
                 CamOption.lookUpDegree < xRotNext &&
                 CamOption.lookDownDegree > xRotNext;
 
-            // FP Rig 상하 회전 적용
-            Com.fpRig.localEulerAngles = Vector3.right * (xRotatable ? xRotNext : xRotPrev);
+            // Rig 상하 회전 적용
+            rig.localEulerAngles = Vector3.right * (xRotatable ? xRotNext : xRotPrev);
 
-            // FP Root 좌우 회전 적용
-            Com.fpRoot.localEulerAngles = Vector3.up * yRotNext;
+            // Root 좌우 회전 적용
+            root.localEulerAngles = Vector3.up * yRotNext;
         }
 
-        /// <summary> 3인칭 회전 </summary>
-        private void RotateTP()
+        /// <summary> 3인칭일 경우 Walker 회전 </summary>
+        private void RotateWalker()
         {
-            float deltaCoef = _deltaTime * 50f;
-
-            // 상하 : TP Rig 회전
-            float xRotPrev = Com.tpRig.localEulerAngles.x;
-            float xRotNext = xRotPrev + _rotation.y
-                * CamOption.rotationSpeed * deltaCoef;
-
-            if (xRotNext > 180f)
-                xRotNext -= 360f;
-
-            // 좌우 : TP Rig 회전
-            float yRotPrev = Com.tpRig.localEulerAngles.y;
-            float yRotNext =
-                yRotPrev + _rotation.x
-                * CamOption.rotationSpeed * deltaCoef;
-
-            // 상하 회전 가능 여부
-            bool xRotatable =
-                CamOption.lookUpDegree < xRotNext &&
-                CamOption.lookDownDegree > xRotNext;
-
-            Vector3 nextRot = new Vector3
-            (
-                xRotatable ? xRotNext : xRotPrev,
-                yRotNext,
-                0f
-            );
-
-            // TP Rig 회전 적용
-            Com.tpRig.localEulerAngles = nextRot;
-        }
-
-        /// <summary> 3인칭일 경우 FP Root 회전 </summary>
-        private void RotateFPRoot()
-        {
-            if (State.isMoving == false) return;
+            if(State.isMoving == false) return;
 
             Vector3 dir = Com.tpRig.TransformDirection(_moveDir);
-            float currentY = Com.fpRoot.localEulerAngles.y;
+            float currentY = Com.walker.localEulerAngles.y;
             float nextY = Quaternion.LookRotation(dir, Vector3.up).eulerAngles.y;
 
             if (nextY - currentY > 180f) nextY -= 360f;
             else if (currentY - nextY > 180f) nextY += 360f;
 
-            Com.fpRoot.eulerAngles = Vector3.up * Mathf.Lerp(currentY, nextY, 0.1f);
-        }
-
-        private void Move()
-        {
-            CheckForwardAndAdjustMoveVector();
-
-            // 이동하지 않는 경우, 미끄럼 방지
-            //if (State.isMoving == false)
-            //{
-            //    Com.rBody.velocity = new Vector3(0f, Com.rBody.velocity.y, 0f);
-            //    return;
-            //}
-
-            // 실제 이동 벡터 계산
-            // 1인칭
-            if (State.isCurrentFp)
-            {
-                _worldMove = Com.fpRoot.TransformDirection(_moveDir);
-            }
-            // 3인칭
-            else
-            {
-                _worldMove = Com.tpRig.TransformDirection(_moveDir);
-            }
-
-            //_currentSpeed = Mathf.Lerp(_currentSpeed, MoveOption.speed, 0.1f);
-
-            _worldMove *= (MoveOption.speed) * (State.isRunning ? MoveOption.runningCoef : 1f);
-
-            // Y축 속도는 유지하면서 XZ평면 이동
-            Com.rBody.velocity = new Vector3(_worldMove.x, Com.rBody.velocity.y, _worldMove.z);
-        }
-
-        private void Jump()
-        {
-            if (!State.isGrounded) return;
-            if (_currentJumpCooldown > 0f) return; // 점프 쿨타임
-
-            if (Input.GetKeyDown(Key.jump))
-            {
-                Debug.Log("JUMP");
-
-                // 하강 중 점프 시 속도가 합산되지 않도록 속도 초기화
-                Com.rBody.velocity = Vector3.zero;
-
-                Com.rBody.AddForce(Vector3.up * MoveOption.jumpForce, ForceMode.VelocityChange);
-
-                // 애니메이션 점프 트리거
-                Com.anim.SetTrigger(AnimOption.paramJump);
-
-                // 쿨타임 초기화
-                _currentJumpCooldown = MoveOption.jumpCooldown;
-            }
+            Com.walker.eulerAngles = Vector3.up * Mathf.Lerp(currentY, nextY, 0.1f);
         }
 
         private void ShowCursorToggle()
@@ -544,17 +352,14 @@ namespace Rito.FpsTpsCharacter
                 // TP -> FP
                 if (State.isCurrentFp)
                 {
-                    Vector3 tpEulerAngle = Com.tpRig.localEulerAngles;
-                    Com.fpRig.localEulerAngles = Vector3.right * tpEulerAngle.x;
-                    Com.fpRoot.localEulerAngles = Vector3.up * tpEulerAngle.y;
+                    Com.walker.localEulerAngles = Vector3.up * Com.tpRoot.localEulerAngles.y;
+                    Com.fpRig.localEulerAngles = Vector3.right * Com.tpRig.localEulerAngles.x;
                 }
                 // FP -> TP
                 else
                 {
-                    Vector3 newRot = default;
-                    newRot.x = Com.fpRig.localEulerAngles.x;
-                    newRot.y = Com.fpRoot.localEulerAngles.y;
-                    Com.tpRig.localEulerAngles = newRot;
+                    Com.tpRoot.localEulerAngles = Vector3.up * Com.walker.localEulerAngles.y;
+                    Com.tpRig.localEulerAngles = Vector3.right * Com.fpRig.localEulerAngles.x;
                 }
             }
         }
@@ -627,12 +432,55 @@ namespace Rito.FpsTpsCharacter
             Com.anim.SetBool(AnimOption.paramGrounded, State.isGrounded);
         }
 
-        private void UpdateCurrentValues()
+        #endregion
+        /***********************************************************************
+        *                               Movement Methods
+        ***********************************************************************/
+        #region .
+        /// <summary> 땅으로부터의 거리 체크 - 애니메이터 전달용 </summary>
+        private void CheckGroundDistance()
         {
-            if(_currentJumpCooldown > 0f)
-                _currentJumpCooldown -= _deltaTime;
+            Vector3 ro = transform.position + Vector3.up;
+            Vector3 rd = Vector3.down;
+            Ray ray = new Ray(ro, rd);
+
+            const float rayDist = 1000f;
+            bool cast =
+                Physics.Raycast(ray, out var hit, rayDist);
+
+            _distFromGround = cast ? (hit.distance - 1f) : float.MaxValue;
+
+            State.isGrounded = Com.pbMove.IsGrounded();
         }
 
+        private void SendMoveInfo(float horizontal, float vertical)
+        {
+            _moveDir = new Vector3(horizontal, 0f, vertical).normalized;
+
+            if (State.isCurrentFp)
+            {
+                _worldMoveDir = Com.walker.TransformDirection(_moveDir);
+            }
+            else
+            {
+                _worldMoveDir = Com.tpRoot.TransformDirection(_moveDir);
+            }
+
+            Com.pbMove.SetMovement(_worldMoveDir, State.isRunning);
+        }
+
+        private void Jump()
+        {
+            bool jumpSucceeded = Com.pbMove.SetJump();
+
+            if (jumpSucceeded)
+            {
+                // 애니메이션 점프 트리거
+                Com.anim.SetTrigger(AnimOption.paramJump);
+
+                Debug.Log("JUMP");
+            }
+        }
         #endregion
     }
 }

@@ -7846,7 +7846,7 @@ GameObject:
   m_Component:
   - component: {fileID: 446864330}
   m_Layer: 0
-  m_Name: FP Root
+  m_Name: Walker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8073,13 +8073,14 @@ MonoBehaviour:
   _components:
     tpCamera: {fileID: 1873147401}
     fpCamera: {fileID: 1929600736}
+    tpRoot: {fileID: 0}
     tpRig: {fileID: 0}
-    fpRoot: {fileID: 0}
+    walker: {fileID: 0}
     fpRig: {fileID: 0}
     tpCamObject: {fileID: 0}
     fpCamObject: {fileID: 0}
-    rBody: {fileID: 0}
     anim: {fileID: 0}
+    pbMove: {fileID: 0}
   _keyOption:
     moveForward: 119
     moveBackward: 115
@@ -8089,17 +8090,6 @@ MonoBehaviour:
     jump: 32
     switchCamera: 9
     showCursor: 308
-  _checkOption:
-    forwardCheckDist: 0.5
-    downCheckDist: 2
-  _movementOption:
-    speed: 5
-    runningCoef: 1.5
-    jumpForce: 5.5
-    groundLayerMask:
-      serializedVersion: 2
-      m_Bits: 4294967295
-    jumpCooldown: 1
   _cameraOption:
     initialCamera: 0
     rotationSpeed: 2
@@ -8121,9 +8111,9 @@ MonoBehaviour:
     isRunning: 0
     isGrounded: 0
     isCursorActive: 0
-  _moveDir: {x: 0, y: 0, z: 0}
-  _groundCheckRadius: 0
   _distFromGround: 0
+  _moveDir: {x: 0, y: 0, z: 0}
+  _worldMoveDir: {x: 0, y: 0, z: 0}
 --- !u!1 &652340475
 GameObject:
   m_ObjectHideFlags: 0
@@ -8590,7 +8580,7 @@ GameObject:
   m_Component:
   - component: {fileID: 826925308}
   m_Layer: 0
-  m_Name: TP Camera Rig
+  m_Name: TP Root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8603,14 +8593,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 826925307}
-  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 1873147400}
+  - {fileID: 1133058221}
   m_Father: {fileID: 578180493}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &916873028
 GameObject:
   m_ObjectHideFlags: 0
@@ -8840,6 +8830,37 @@ Transform:
   m_Father: {fileID: 1036616064}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1133058220
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1133058221}
+  m_Layer: 0
+  m_Name: TP Rig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1133058221
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1133058220}
+  m_LocalRotation: {x: 0.38268343, y: 0, z: 0, w: 0.92387956}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 1873147400}
+  m_Father: {fileID: 826925308}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 45, y: 0, z: 0}
 --- !u!1 &1138194513
 GameObject:
   m_ObjectHideFlags: 0
@@ -9035,7 +9056,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1153379083}
   m_Layer: 0
-  m_Name: FP Camera Rig
+  m_Name: FP Rig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9688,7 +9709,7 @@ GameObject:
   - component: {fileID: 1873147400}
   - component: {fileID: 1873147401}
   m_Layer: 0
-  m_Name: TP Camera
+  m_Name: Tp Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9705,7 +9726,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 826925308}
+  m_Father: {fileID: 1133058221}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &1873147401

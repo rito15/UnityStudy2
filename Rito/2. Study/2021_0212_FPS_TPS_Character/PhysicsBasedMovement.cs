@@ -22,8 +22,6 @@ namespace Rito.FpsTpsCharacter
 
             [HideInInspector] public CapsuleCollider subCapsule;
             [HideInInspector] public Rigidbody subRBody;
-
-            [HideInInspector] public Transform walker;
         }
         [Serializable]
         public class CheckOption
@@ -31,7 +29,7 @@ namespace Rito.FpsTpsCharacter
             [Tooltip("지면으로 체크할 레이어 설정")]
             public LayerMask groundLayerMask = -1;
 
-            [Range(0.1f, 3.0f), Tooltip("지면 감지 거리")]
+            [Range(0.1f, 10.0f), Tooltip("지면 감지 거리")]
             public float groundCheckDistance = 2.0f;
 
             [Range(0.01f, 0.3f), Tooltip("전방 감지 거리")]
@@ -47,7 +45,7 @@ namespace Rito.FpsTpsCharacter
         public class MovementOption
         {
             [Range(1f, 10f), Tooltip("이동속도")]
-            public float speed = 3f;
+            public float speed = 5f;
 
             [Range(1f, 3f), Tooltip("달리기 이동속도 증가 계수")]
             public float runningCoef = 1.5f;
@@ -79,6 +77,7 @@ namespace Rito.FpsTpsCharacter
             public float groundDistance;
             public float jumpCooldown;
             public float groundSlopeAngle;  // 현재 바닥의 경사각
+            public float groundVerticalSlopeAngle;
             public float forwardSlopeAngle; // 캐릭터가 바라보는 방향의 경사각
         }
 
@@ -103,6 +102,8 @@ namespace Rito.FpsTpsCharacter
 
         private float _capsuleHeightDiff;
 
+        private float _slideSpeed;
+
         #endregion
         /***********************************************************************
         *                               Unity Events
@@ -116,8 +117,8 @@ namespace Rito.FpsTpsCharacter
 
         private void FixedUpdate()
         {
-            CheckGround();
-            CheckFront();
+            CheckGroundSweepTest();
+            CheckForwardSweepTest();
             Move();
 
             if(Current.jumpCooldown > 0f)
@@ -165,26 +166,24 @@ namespace Rito.FpsTpsCharacter
         *                               Public Methods
         ***********************************************************************/
         #region .
-        public void SetWalker(Transform walkerTransform)
-        {
-            Com.walker = walkerTransform;
-        }
         public void SetMovement(in Vector3 worldMoveDir, bool isRunning)
         {
             Current.worldMoveDir = worldMoveDir;
-            State.isMoving = worldMoveDir.sqrMagnitude > 0.1f;
+            State.isMoving = worldMoveDir.sqrMagnitude > 0.01f;
             State.isRunning = isRunning;
         }
         public bool SetJump()
         {
-            if(State.isGrounded == false)
+            if(State.isGrounded == false || Current.jumpCooldown > 0f)
                 return false;
 
             State.isJumpTriggered = true;
-            return Current.jumpCooldown <= 0f;
+            return true;
         }
 
         public bool IsGrounded() => State.isGrounded;
+
+        public float GetDistanceFromGround() => Current.groundDistance;
 
         #endregion
         /***********************************************************************
@@ -192,7 +191,7 @@ namespace Rito.FpsTpsCharacter
         ***********************************************************************/
         #region .
 
-        private void CheckGround()
+        private void CheckGroundSweepTest()
         {
             Current.groundDistance = float.MaxValue;
             Current.groundNormal = Vector3.up;
@@ -200,116 +199,165 @@ namespace Rito.FpsTpsCharacter
             Current.forwardSlopeAngle = 0f;
 
             bool sweep =
-                Com.subRBody.SweepTest(Vector3.down, out var hit, COption.groundCheckDistance, QueryTriggerInteraction.Ignore);
+                Com.subRBody.SweepTest(Vector3.down, out var hitD, COption.groundCheckDistance, QueryTriggerInteraction.Ignore);
 
             State.isGrounded = false;
 
             if (sweep)
             {
-                Current.groundNormal = hit.normal;
+                // 뚝 끊기는 지형 부드럽게 이동하도록 구현 :
+                // 이동방향 전방으로 체크해서 이중 스윕테스트
+                Vector3 fwDownSweepDir = (Current.worldMoveDir + Vector3.down * 0.5f).normalized;
 
-                // 현재 위치한 지면의 경사각 구하기(캐릭터 회전 고려)
+                bool sweepFD =
+                    Com.subRBody.SweepTest(fwDownSweepDir, out var hitFD, COption.groundCheckDistance, QueryTriggerInteraction.Ignore);
+
+                // 지면 노멀벡터 초기화
+                Current.groundNormal = sweepFD ? (hitD.normal + hitFD.normal) * 0.5f : hitD.normal;
+
+                _gzForwardGroundTouch = sweepFD ? hitFD.point : Vector3.down * 999f;
+
+                // 현재 위치한 지면의 경사각 구하기(캐릭터 이동방향 고려)
                 Current.groundSlopeAngle = Vector3.Angle(Current.groundNormal, Vector3.up);
-                Current.forwardSlopeAngle = Vector3.Angle(Current.groundNormal, Com.walker.forward) - 90f;
+                Current.forwardSlopeAngle = Vector3.Angle(Current.groundNormal, Current.worldMoveDir) - 90f;
 
                 State.isOnSteepSlope = Current.groundSlopeAngle >= COption.maxSlopeAngle;
+
+                // 경사각 이중검증 (수직 레이캐스트) : 뾰족하거나 각진 부분 체크
+                if (State.isOnSteepSlope)
+                {
+                    Vector3 ro = hitD.point + Vector3.up * 0.1f;
+                    Vector3 rd = Vector3.down;
+                    bool rayD = 
+                        Physics.Raycast(ro, rd, out var hitRayD, 0.2f, COption.groundLayerMask, QueryTriggerInteraction.Ignore);
+
+                    Current.groundVerticalSlopeAngle = rayD ? Vector3.Angle(hitRayD.normal, Vector3.up) : Current.groundSlopeAngle;
+
+                    State.isOnSteepSlope = Current.groundVerticalSlopeAngle >= COption.maxSlopeAngle;
+                }
+
                 State.isGrounded = 
-                    (hit.distance < _capsuleHeightDiff) && !State.isOnSteepSlope;
+                    (hitD.distance < _capsuleHeightDiff) && !State.isOnSteepSlope;
 
-                _groundTouch = hit.point;
+                _gzGroundTouch = hitD.point;
 
-                Current.groundDistance = transform.position.y - hit.point.y;
+                Current.groundDistance = transform.position.y - hitD.point.y;
             }
 
             // 월드 이동벡터 회전축
             Current.groundCross = Vector3.Cross(Current.groundNormal, Vector3.up);
         }
 
-        private void CheckFront()
+        private void CheckForwardSweepTest()
         {
             bool sweep =
-                Com.subRBody.SweepTest(Com.walker.forward, out var hit, COption.forwardCheckDistance, QueryTriggerInteraction.Ignore);
+                Com.subRBody.SweepTest(Current.worldMoveDir + Vector3.down * 0.2f,
+                out var hit, COption.forwardCheckDistance, QueryTriggerInteraction.Ignore);
 
             State.isForwardBlocked = false;
             if (sweep)
             {
-                _forwardTouch = hit.point;
+                _gzForwardTouch = hit.point;
 
-                float frontObstacleAngle = Vector3.Angle(hit.normal, Vector3.up);
+                float forwardObstacleAngle = Vector3.Angle(hit.normal, Vector3.up);
 
-                State.isForwardBlocked = frontObstacleAngle >= COption.maxSlopeAngle;
+                State.isForwardBlocked = forwardObstacleAngle >= COption.maxSlopeAngle;
             }
         }
 
         private void Move()
         {
-            // 0. 가파른 경사면에 있는 경우 : 꼼짝말고 미끄럼틀 타기 - 계단 내려갈 때도 영향줌..
-            //if (State.isOnSteepSlope && Current.groundDistance < 0.5f)
-            //{
-            //    Current.finalVelocity = Vector3.down * 9.8f;
-
-            //    _slideDir =
-            //        Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down;
-
-            //    Current.finalVelocity =
-            //        Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
-
-            //    Com.rBody.velocity = Current.finalVelocity;
-
-            //    return;
-            //}
-
-            // 1. 속력 계산
-            float speed = 0f;
-            if (State.isMoving)
+            // 0. 가파른 경사면에 있는 경우 : 꼼짝말고 미끄럼틀 타기
+            if (State.isOnSteepSlope && Current.groundDistance < 0.1f)
             {
-                speed = MOption.speed;
-                if(State.isRunning)
-                    speed *= MOption.runningCoef;
-            }
+                DebugMark(0);
 
-            // 2. XZ 이동속도 계산
-            if (State.isForwardBlocked && !State.isGrounded) // 전방 이동 불가능한 경우
-            {
-                Current.finalVelocity = Vector3.zero;
+                //Current.finalVelocity += Vector3.down * Current.finalVelocity.y * Time.fixedDeltaTime;
+
+                _slideSpeed += Time.fixedDeltaTime;
+                Current.finalVelocity = Vector3.down * _slideSpeed;
+
+                _gzSlideDir =
+                    Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down;
+
+                Current.finalVelocity =
+                    Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
+
+                Com.rBody.velocity = Current.finalVelocity;
+
+                return;
             }
             else
             {
+                _slideSpeed = 0f;
+            }
+
+            if(State.isGrounded) _isJumping = false;
+
+            // 1. XZ 이동속도 계산
+            if (State.isForwardBlocked && !State.isGrounded) // 공중에서 전방이 막힌 경우
+            {
+                DebugMark(1);
+                Current.finalVelocity =
+                    //Mathf.Min(0f, Current.finalVelocity.y) * Vector3.up;
+                    Vector3.zero;
+            }
+            else // 이동 가능한 경우 : 지상 or 전방이 막히지 않음
+            {
+                DebugMark(2);
+                float speed = 0f;
+                if (State.isMoving)
+                {
+                    speed = MOption.speed;
+                    if (State.isRunning)
+                        speed *= MOption.runningCoef;
+                }
+
                 Current.finalVelocity = Current.worldMoveDir * speed;
             }
 
-            // 3. 벡터 회전
-            if (State.isMoving && State.isGrounded)
+            // 중력 계산
+            Current.finalVelocity += Physics.gravity * 0.5f;
+
+            // 2. 경사로 벡터 회전
+            if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !_isJumping) // 지상
             {
-                // 중력 계산
-                Current.finalVelocity += Physics.gravity * 0.2f;
+                DebugMark(3);
 
-                // 벡터 회전
-                Current.finalVelocity =
-                    Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
+                //if (State.isMoving && !State.isForwardBlocked)
+                {
+                    DebugMark(4);
 
-                _rotatedWorldMoveDir =
-                    Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.worldMoveDir;
+                    // 벡터 회전
+                    Current.finalVelocity =
+                        Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
+
+                    _gzRotatedWorldMoveDir =
+                        Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.worldMoveDir;
+                }
             }
 
-            // 4. 리지드바디 중력 적용 여부 설정
+            // 3. 리지드바디 중력 적용 여부 설정
             Com.rBody.useGravity = !State.isGrounded;
 
-            // 5. 최종 속도 계산
-            if (State.isGrounded)
+            // 4. 최종 속도 계산
+            if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !_isJumping)
             {
+                DebugMark(5);
+
                 Com.rBody.velocity = Current.finalVelocity;
             }
             else
             {
+                DebugMark(7);
                 Com.rBody.velocity =
                     new Vector3(Current.finalVelocity.x, Com.rBody.velocity.y, Current.finalVelocity.z);
             }
 
-            // 6. 점프
+            // 5. 점프
             if (State.isJumpTriggered && Current.jumpCooldown <= 0f)
             {
-                Com.rBody.useGravity = false;
+                _isJumping = true;
 
                 // 하강 중 점프 시 속도가 합산되지 않도록 속도 초기화
                 Com.rBody.velocity = Vector3.zero;
@@ -321,16 +369,38 @@ namespace Rito.FpsTpsCharacter
             }
         }
 
+        private bool _isJumping = true;
+
+        #endregion
+        /***********************************************************************
+        *                               Debugs
+        ***********************************************************************/
+        #region .
+
+#if UNITY_EDITOR
+        public bool _debugOn;
+        public int _debugIndex;
+#endif
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        private void DebugMark(int index)
+        {
+            if(!_debugOn) return;
+            Debug.Log("MARK - " + index);
+            _debugIndex = index;
+        }
+
         #endregion
         /***********************************************************************
         *                               Gizmos
         ***********************************************************************/
         #region .
-        private Vector3 _groundTouch;
-        private Vector3 _forwardTouch;
-        private Vector3 _rotatedWorldMoveDir;
+        private Vector3 _gzGroundTouch;
+        private Vector3 _gzForwardGroundTouch;
+        private Vector3 _gzForwardTouch;
+        private Vector3 _gzRotatedWorldMoveDir;
         
-        private Vector3 _slideDir; // 가파른 경사면에서 미끄럼틀 탈 방향
+        private Vector3 _gzSlideDir; // 가파른 경사면에서 미끄럼틀 탈 방향
 
         [Header("Gizmos Option"), SerializeField, Range(0.1f, 2f)]
         private float _gizmoRadius = 0.1f;
@@ -340,24 +410,27 @@ namespace Rito.FpsTpsCharacter
             if (Application.isPlaying == false) return;
 
             Gizmos.color = Color.red;
-            Gizmos.DrawSphere(_groundTouch, _gizmoRadius);
+            Gizmos.DrawSphere(_gzGroundTouch, _gizmoRadius);
+
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawSphere(_gzForwardGroundTouch, _gizmoRadius);
 
             if (State.isForwardBlocked)
             {
                 Gizmos.color = Color.blue;
-                Gizmos.DrawSphere(_forwardTouch, _gizmoRadius);
+                Gizmos.DrawSphere(_gzForwardTouch, _gizmoRadius);
             }
 
             Gizmos.color = Color.green;
-            Gizmos.DrawLine(_groundTouch, _groundTouch + Current.groundCross * 2f);
+            Gizmos.DrawLine(_gzGroundTouch, _gzGroundTouch + Current.groundCross * 2f);
 
             Gizmos.color = Color.black;
-            Gizmos.DrawLine(transform.position, transform.position + _rotatedWorldMoveDir);
+            Gizmos.DrawLine(transform.position, transform.position + _gzRotatedWorldMoveDir);
 
             if (State.isOnSteepSlope)
             {
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(transform.position, transform.position + _slideDir);
+                Gizmos.DrawLine(transform.position, transform.position + _gzSlideDir);
             }
         }
 

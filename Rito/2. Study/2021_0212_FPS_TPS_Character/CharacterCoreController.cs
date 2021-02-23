@@ -215,8 +215,6 @@ namespace Rito.FpsTpsCharacter
 
             // Zoom
             _tpCamZoomInitialDistance = Vector3.Distance(Com.tpRig.position, Com.tpCamera.transform.position);
-
-            Com.pbMove.SetWalker(Com.walker);
         }
         
         #endregion
@@ -440,16 +438,17 @@ namespace Rito.FpsTpsCharacter
         /// <summary> 땅으로부터의 거리 체크 - 애니메이터 전달용 </summary>
         private void CheckGroundDistance()
         {
-            Vector3 ro = transform.position + Vector3.up;
-            Vector3 rd = Vector3.down;
-            Ray ray = new Ray(ro, rd);
+            //Vector3 ro = transform.position + Vector3.up;
+            //Vector3 rd = Vector3.down;
+            //Ray ray = new Ray(ro, rd);
 
-            const float rayDist = 1000f;
-            bool cast =
-                Physics.Raycast(ray, out var hit, rayDist);
+            //const float rayDist = 1000f;
+            //bool cast =
+            //    Physics.Raycast(ray, out var hit, rayDist);
 
-            _distFromGround = cast ? (hit.distance - 1f) : float.MaxValue;
+            //_distFromGround = cast ? (hit.distance - 1f) : float.MaxValue;
 
+            _distFromGround = 0f;//Com.pbMove.GetDistanceFromGround();
             State.isGrounded = Com.pbMove.IsGrounded();
         }
 

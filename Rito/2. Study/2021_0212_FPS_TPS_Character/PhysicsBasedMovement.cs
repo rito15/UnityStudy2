@@ -105,11 +105,11 @@ namespace Rito.FpsTpsCharacter
         [SerializeField] private CurrentState _currentStates = new CurrentState();
         [SerializeField] private CurrentValue _currentValues = new CurrentValue();
 
-        public Components Com => _components;
-        public CheckOption COption => _checkOptions;
-        public MovementOption MOption => _moveOptions;
-        public CurrentState State => _currentStates;
-        public CurrentValue Current => _currentValues;
+        private Components Com => _components;
+        private CheckOption COption => _checkOptions;
+        private MovementOption MOption => _moveOptions;
+        private CurrentState State => _currentStates;
+        private CurrentValue Current => _currentValues;
 
 
         private float _capsuleHeightDiff;

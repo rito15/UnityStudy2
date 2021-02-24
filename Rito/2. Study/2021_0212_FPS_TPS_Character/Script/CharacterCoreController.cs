@@ -438,7 +438,7 @@ namespace Rito.FpsTpsCharacter
         /// <summary> 땅으로부터의 거리 체크 - 애니메이터 전달용 </summary>
         private void CheckGroundDistance()
         {
-            _distFromGround = 0f;//Com.pbMove.GetDistanceFromGround();
+            _distFromGround = Com.pbMove.DistanceFromGround;
             State.isGrounded = Com.pbMove.IsGrounded;
         }
 

@@ -32,7 +32,7 @@ namespace Rito.FpsTpsCharacter
             [Range(0.1f, 10.0f), Tooltip("지면 감지 거리")]
             public float groundCheckDistance = 2.0f;
 
-            [Range(0.01f, 0.3f), Tooltip("전방 감지 거리")]
+            [Range(0.01f, 0.5f), Tooltip("전방 감지 거리")]
             public float forwardCheckDistance = 0.1f;
         }
         [Serializable]
@@ -199,7 +199,10 @@ namespace Rito.FpsTpsCharacter
             if (!State.isGrounded && Current.jumpCount == 0) return false;
 
             if (Current.jumpCooldown > 0f) return false;
-            if(Current.jumpCount >= MOption.maxJumpCount) return false;
+            if (Current.jumpCount >= MOption.maxJumpCount) return false;
+
+            // 접근 불가능 경사로에서 점프 불가능
+            if (State.isOnSteepSlope) return false;
 
             State.isJumpTriggered = true;
             return true;
@@ -336,9 +339,17 @@ namespace Rito.FpsTpsCharacter
 
                 return;
             }
+            //else if (Current.forwardSlopeAngle > MOption.maxSlopeAngle)
+            //{
+            //    Current.finalVelocity = Vector3.zero;
+            //    Com.rBody.velocity = Com.rBody.velocity.y * Vector3.up;
+            //    Com.rBody.useGravity = true;
+            //    return;
+            //}
 
             // 1. XZ 이동속도 계산
-            if (State.isForwardBlocked && !State.isGrounded) // 공중에서 전방이 막힌 경우
+            // 공중에서 전방이 막힌 경우 제한 (지상에서는 벽에 붙어서 이동할 수 있도록 허용)
+            if (State.isForwardBlocked && !State.isGrounded) 
             {
                 DebugMark(1);
 

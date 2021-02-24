@@ -95,6 +95,15 @@ namespace Rito.FpsTpsCharacter
 
         #endregion
         /***********************************************************************
+        *                               Public Properties
+        ***********************************************************************/
+        #region .
+        public bool IsMoving => State.isMoving;
+        public bool IsGrounded => State.isGrounded;
+        public float DistanceFromGround => Current.groundDistance;
+
+        #endregion
+        /***********************************************************************
         *                               Variables
         ***********************************************************************/
         #region .
@@ -186,17 +195,22 @@ namespace Rito.FpsTpsCharacter
         }
         public bool SetJump()
         {
-            //if(!State.isGrounded) return false;
-            if(Current.jumpCooldown > 0f) return false;
+            // 첫 점프는 지면 위에서만 가능
+            if (!State.isGrounded && Current.jumpCount == 0) return false;
+
+            if (Current.jumpCooldown > 0f) return false;
             if(Current.jumpCount >= MOption.maxJumpCount) return false;
 
             State.isJumpTriggered = true;
             return true;
         }
 
-        public bool IsGrounded() => State.isGrounded;
-
-        public float GetDistanceFromGround() => Current.groundDistance;
+        public void StopMoving()
+        {
+            Current.worldMoveDir = Vector3.zero;
+            State.isMoving = false;
+            State.isRunning = false;
+        }
 
         #endregion
         /***********************************************************************

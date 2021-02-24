@@ -38,7 +38,7 @@ namespace Rito.FpsTpsCharacter
             [Range(15f, 70f), Tooltip("등반 가능한 경사각")]
             public float maxSlopeAngle = 50f;
 
-            [Range(1f, 3f), Tooltip("경사로 이동속도 변화율")]
+            [Range(1f, 3f), Tooltip("경사로 이동속도 변화율(가속/감속)")]
             public float slopeSpeedChangeRate = 2f;
         }
         [Serializable]
@@ -50,11 +50,14 @@ namespace Rito.FpsTpsCharacter
             [Range(1f, 3f), Tooltip("달리기 이동속도 증가 계수")]
             public float runningCoef = 1.5f;
 
-            [Range(1f, 50f), Tooltip("점프 강도")]
+            [Range(1f, 10f), Tooltip("점프 강도")]
             public float jumpForce = 5.5f;
 
             [Range(0.0f, 2.0f), Tooltip("점프 쿨타임")]
-            public float jumpCooldown = 1.0f;
+            public float jumpCooldown = 0.6f;
+
+            [Range(0, 3), Tooltip("점프 허용 횟수")]
+            public int maxJumpCount = 1;
         }
         [Serializable]
         public class CurrentState
@@ -64,6 +67,7 @@ namespace Rito.FpsTpsCharacter
             public bool isGrounded;
             public bool isOnSteepSlope; // 등반 불가능한 경사로에 올라와 있음
             public bool isJumpTriggered;
+            public bool isJumping;
             public bool isForwardBlocked;
         }
         [Serializable]
@@ -74,11 +78,18 @@ namespace Rito.FpsTpsCharacter
             public Vector3 groundCross;
             public Vector3 finalVelocity;
 
-            public float groundDistance;
+            [Space]
             public float jumpCooldown;
-            public float groundSlopeAngle;  // 현재 바닥의 경사각
-            public float groundVerticalSlopeAngle;
+            public int jumpCount;
+
+            [Space]
+            public float groundDistance;
+            public float groundSlopeAngle;         // 현재 바닥의 경사각
+            public float groundVerticalSlopeAngle; // 수직으로 재측정한 경사각
             public float forwardSlopeAngle; // 캐릭터가 바라보는 방향의 경사각
+
+            [Space]
+            public float gravity; // 직접 제어하는 중력값
         }
 
         #endregion
@@ -102,7 +113,7 @@ namespace Rito.FpsTpsCharacter
 
         private float _capsuleHeightDiff;
 
-        private float _slideSpeed;
+        private float _fixedDeltaTime;
 
         #endregion
         /***********************************************************************
@@ -117,12 +128,13 @@ namespace Rito.FpsTpsCharacter
 
         private void FixedUpdate()
         {
+            _fixedDeltaTime = Time.fixedDeltaTime;
+
             CheckGroundSweepTest();
             CheckForwardSweepTest();
-            Move();
 
-            if(Current.jumpCooldown > 0f)
-                Current.jumpCooldown -= Time.fixedDeltaTime;
+            UpdatePhysics();
+            Move();
         }
 
         #endregion
@@ -174,8 +186,9 @@ namespace Rito.FpsTpsCharacter
         }
         public bool SetJump()
         {
-            if(State.isGrounded == false || Current.jumpCooldown > 0f)
-                return false;
+            //if(!State.isGrounded) return false;
+            if(Current.jumpCooldown > 0f) return false;
+            if(Current.jumpCount >= MOption.maxJumpCount) return false;
 
             State.isJumpTriggered = true;
             return true;
@@ -265,6 +278,28 @@ namespace Rito.FpsTpsCharacter
             }
         }
 
+        private void UpdatePhysics()
+        {
+            // Custom Gravity, Jumping State, Using Gravity
+            if (State.isGrounded)
+            {
+                Current.gravity = 0f;
+                Com.rBody.useGravity = false;
+
+                State.isJumping = false;
+                Current.jumpCount = 0;
+            }
+            else
+            {
+                Current.gravity += _fixedDeltaTime * Physics.gravity.y;
+                Com.rBody.useGravity = true;
+            }
+
+            // Calculate Jump Cooldown
+            if (Current.jumpCooldown > 0f)
+                Current.jumpCooldown -= _fixedDeltaTime;
+        }
+
         private void Move()
         {
             // 0. 가파른 경사면에 있는 경우 : 꼼짝말고 미끄럼틀 타기
@@ -272,10 +307,7 @@ namespace Rito.FpsTpsCharacter
             {
                 DebugMark(0);
 
-                //Current.finalVelocity += Vector3.down * Current.finalVelocity.y * Time.fixedDeltaTime;
-
-                _slideSpeed += Time.fixedDeltaTime;
-                Current.finalVelocity = Vector3.down * _slideSpeed;
+                Current.finalVelocity = Vector3.up * Current.gravity;
 
                 _gzSlideDir =
                     Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down;
@@ -287,12 +319,6 @@ namespace Rito.FpsTpsCharacter
 
                 return;
             }
-            else
-            {
-                _slideSpeed = 0f;
-            }
-
-            if(State.isGrounded) _isJumping = false;
 
             // 1. XZ 이동속도 계산
             if (State.isForwardBlocked && !State.isGrounded) // 공중에서 전방이 막힌 경우
@@ -316,48 +342,39 @@ namespace Rito.FpsTpsCharacter
                 Current.finalVelocity = Current.worldMoveDir * speed;
             }
 
-            // 중력 계산
-            Current.finalVelocity += Physics.gravity * 0.5f;
+            // 2. 중력 합산
+            Current.finalVelocity.y += Current.gravity;
 
-            // 2. 경사로 벡터 회전
-            if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !_isJumping) // 지상
+            // 3. 벡터 회전 및 최종 속도 계산
+            if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !State.isJumping) // 지상
             {
                 DebugMark(3);
 
-                //if (State.isMoving && !State.isForwardBlocked)
+                if (State.isMoving && !State.isForwardBlocked)
                 {
                     DebugMark(4);
 
-                    // 벡터 회전
+                    // 벡터 회전 (경사로)
                     Current.finalVelocity =
                         Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
 
                     _gzRotatedWorldMoveDir =
                         Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.worldMoveDir;
                 }
-            }
 
-            // 3. 리지드바디 중력 적용 여부 설정
-            Com.rBody.useGravity = !State.isGrounded;
-
-            // 4. 최종 속도 계산
-            if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !_isJumping)
-            {
-                DebugMark(5);
-
+                // 최종 속도 계산
                 Com.rBody.velocity = Current.finalVelocity;
             }
-            else
+            else // 공중
             {
-                DebugMark(7);
                 Com.rBody.velocity =
                     new Vector3(Current.finalVelocity.x, Com.rBody.velocity.y, Current.finalVelocity.z);
             }
 
-            // 5. 점프
+            // 4. 점프
             if (State.isJumpTriggered && Current.jumpCooldown <= 0f)
             {
-                _isJumping = true;
+                State.isJumping = true;
 
                 // 하강 중 점프 시 속도가 합산되지 않도록 속도 초기화
                 Com.rBody.velocity = Vector3.zero;
@@ -366,10 +383,13 @@ namespace Rito.FpsTpsCharacter
                 // 점프 쿨타임, 트리거 초기화
                 Current.jumpCooldown = MOption.jumpCooldown;
                 State.isJumpTriggered = false;
+
+                // 커스텀 중력 초기화
+                Current.gravity = 0f;
+
+                Current.jumpCount++;
             }
         }
-
-        private bool _isJumping = true;
 
         #endregion
         /***********************************************************************

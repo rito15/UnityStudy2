@@ -34,12 +34,6 @@ namespace Rito.FpsTpsCharacter
 
             [Range(0.01f, 0.3f), Tooltip("전방 감지 거리")]
             public float forwardCheckDistance = 0.1f;
-
-            [Range(15f, 70f), Tooltip("등반 가능한 경사각")]
-            public float maxSlopeAngle = 50f;
-
-            [Range(1f, 3f), Tooltip("경사로 이동속도 변화율(가속/감속)")]
-            public float slopeSpeedChangeRate = 2f;
         }
         [Serializable]
         public class MovementOption
@@ -51,13 +45,19 @@ namespace Rito.FpsTpsCharacter
             public float runningCoef = 1.5f;
 
             [Range(1f, 10f), Tooltip("점프 강도")]
-            public float jumpForce = 5.5f;
+            public float jumpForce = 4.2f;
 
             [Range(0.0f, 2.0f), Tooltip("점프 쿨타임")]
             public float jumpCooldown = 0.6f;
 
             [Range(0, 3), Tooltip("점프 허용 횟수")]
             public int maxJumpCount = 1;
+
+            [Range(15f, 70f), Tooltip("등반 가능한 경사각")]
+            public float maxSlopeAngle = 50f;
+
+            [Range(0f, 4f), Tooltip("경사로 이동속도 변화율(가속/감속)")]
+            public float slopeAccel = 1f;
         }
         [Serializable]
         public class CurrentState
@@ -87,6 +87,7 @@ namespace Rito.FpsTpsCharacter
             public float groundSlopeAngle;         // 현재 바닥의 경사각
             public float groundVerticalSlopeAngle; // 수직으로 재측정한 경사각
             public float forwardSlopeAngle; // 캐릭터가 바라보는 방향의 경사각
+            public float slopeAccel;        // 경사로 인한 가속/감속 비율
 
             [Space]
             public float gravity; // 직접 제어하는 중력값
@@ -112,7 +113,6 @@ namespace Rito.FpsTpsCharacter
 
 
         private float _capsuleHeightDiff;
-
         private float _fixedDeltaTime;
 
         #endregion
@@ -204,12 +204,15 @@ namespace Rito.FpsTpsCharacter
         ***********************************************************************/
         #region .
 
+        /// <summary> 하단 지면 검사 </summary>
         private void CheckGroundSweepTest()
         {
             Current.groundDistance = float.MaxValue;
             Current.groundNormal = Vector3.up;
             Current.groundSlopeAngle = 0f;
             Current.forwardSlopeAngle = 0f;
+
+            // D : down / FD : Foward Down
 
             bool sweep =
                 Com.subRBody.SweepTest(Vector3.down, out var hitD, COption.groundCheckDistance, QueryTriggerInteraction.Ignore);
@@ -228,13 +231,11 @@ namespace Rito.FpsTpsCharacter
                 // 지면 노멀벡터 초기화
                 Current.groundNormal = sweepFD ? (hitD.normal + hitFD.normal) * 0.5f : hitD.normal;
 
-                _gzForwardGroundTouch = sweepFD ? hitFD.point : Vector3.down * 999f;
-
                 // 현재 위치한 지면의 경사각 구하기(캐릭터 이동방향 고려)
                 Current.groundSlopeAngle = Vector3.Angle(Current.groundNormal, Vector3.up);
                 Current.forwardSlopeAngle = Vector3.Angle(Current.groundNormal, Current.worldMoveDir) - 90f;
 
-                State.isOnSteepSlope = Current.groundSlopeAngle >= COption.maxSlopeAngle;
+                State.isOnSteepSlope = Current.groundSlopeAngle >= MOption.maxSlopeAngle;
 
                 // 경사각 이중검증 (수직 레이캐스트) : 뾰족하거나 각진 부분 체크
                 if (State.isOnSteepSlope)
@@ -242,25 +243,29 @@ namespace Rito.FpsTpsCharacter
                     Vector3 ro = hitD.point + Vector3.up * 0.1f;
                     Vector3 rd = Vector3.down;
                     bool rayD = 
-                        Physics.Raycast(ro, rd, out var hitRayD, 0.2f, COption.groundLayerMask, QueryTriggerInteraction.Ignore);
+                        //Physics.Raycast(ro, rd, out var hitRayD, 0.2f, COption.groundLayerMask, QueryTriggerInteraction.Ignore);
+                        Physics.SphereCast(ro, 0.09f, rd, out var hitRayD, 0.2f, COption.groundLayerMask, QueryTriggerInteraction.Ignore);
 
                     Current.groundVerticalSlopeAngle = rayD ? Vector3.Angle(hitRayD.normal, Vector3.up) : Current.groundSlopeAngle;
+                    //Debug.Log($"{Current.groundSlopeAngle}, {Current.groundVerticalSlopeAngle}");
 
-                    State.isOnSteepSlope = Current.groundVerticalSlopeAngle >= COption.maxSlopeAngle;
+                    State.isOnSteepSlope = Current.groundVerticalSlopeAngle >= MOption.maxSlopeAngle;
                 }
 
                 State.isGrounded = 
                     (hitD.distance < _capsuleHeightDiff) && !State.isOnSteepSlope;
 
-                _gzGroundTouch = hitD.point;
+                Current.groundDistance = Mathf.Max(transform.position.y - hitD.point.y, 0f);
 
-                Current.groundDistance = transform.position.y - hitD.point.y;
+                GzUpdateValue(ref _gzGroundTouch, hitD.point); // Red
+                GzUpdateValue(ref _gzForwardGroundTouch, sweepFD ? hitFD.point : Vector3.down * 999f); // Magenta
             }
 
             // 월드 이동벡터 회전축
             Current.groundCross = Vector3.Cross(Current.groundNormal, Vector3.up);
         }
 
+        /// <summary> 전방 장애물 검사 </summary>
         private void CheckForwardSweepTest()
         {
             bool sweep =
@@ -270,11 +275,10 @@ namespace Rito.FpsTpsCharacter
             State.isForwardBlocked = false;
             if (sweep)
             {
-                _gzForwardTouch = hit.point;
-
                 float forwardObstacleAngle = Vector3.Angle(hit.normal, Vector3.up);
+                State.isForwardBlocked = forwardObstacleAngle >= MOption.maxSlopeAngle;
 
-                State.isForwardBlocked = forwardObstacleAngle >= COption.maxSlopeAngle;
+                GzUpdateValue(ref _gzForwardTouch, hit.point);
             }
         }
 
@@ -309,11 +313,10 @@ namespace Rito.FpsTpsCharacter
 
                 Current.finalVelocity = Vector3.up * Current.gravity;
 
-                _gzSlideDir =
-                    Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down;
-
                 Current.finalVelocity =
                     Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
+
+                GzUpdateValue(ref _gzSlideDir, Quaternion.AngleAxis(90f - Current.groundSlopeAngle, Current.groundCross) * Vector3.down);
 
                 Com.rBody.velocity = Current.finalVelocity;
 
@@ -324,6 +327,7 @@ namespace Rito.FpsTpsCharacter
             if (State.isForwardBlocked && !State.isGrounded) // 공중에서 전방이 막힌 경우
             {
                 DebugMark(1);
+
                 Current.finalVelocity =
                     //Mathf.Min(0f, Current.finalVelocity.y) * Vector3.up;
                     Vector3.zero;
@@ -331,6 +335,7 @@ namespace Rito.FpsTpsCharacter
             else // 이동 가능한 경우 : 지상 or 전방이 막히지 않음
             {
                 DebugMark(2);
+
                 float speed = 0f;
                 if (State.isMoving)
                 {
@@ -354,12 +359,27 @@ namespace Rito.FpsTpsCharacter
                 {
                     DebugMark(4);
 
+                    // 경사로 인한 가속/감속
+                    if (MOption.slopeAccel > 0f)
+                    {
+                        bool isPlus = Current.forwardSlopeAngle >= 0f;
+                        float absFsAngle = isPlus ? Current.forwardSlopeAngle : -Current.forwardSlopeAngle;
+                        float accel = MOption.slopeAccel * absFsAngle * 0.01111f + 1f;
+                        Current.slopeAccel = !isPlus ? accel : 1.0f / accel;
+
+                        Current.finalVelocity = new Vector3(
+                                Current.finalVelocity.x * Current.slopeAccel,
+                                Current.finalVelocity.y,
+                                Current.finalVelocity.z * Current.slopeAccel
+                            );
+                    }
+
                     // 벡터 회전 (경사로)
                     Current.finalVelocity =
                         Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.finalVelocity;
 
-                    _gzRotatedWorldMoveDir =
-                        Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.worldMoveDir;
+                    GzUpdateValue(ref _gzRotatedWorldMoveDir, 
+                        Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross) * Current.worldMoveDir);
                 }
 
                 // 최종 속도 계산
@@ -367,6 +387,8 @@ namespace Rito.FpsTpsCharacter
             }
             else // 공중
             {
+                DebugMark(5);
+
                 Com.rBody.velocity =
                     new Vector3(Current.finalVelocity.x, Com.rBody.velocity.y, Current.finalVelocity.z);
             }
@@ -397,10 +419,8 @@ namespace Rito.FpsTpsCharacter
         ***********************************************************************/
         #region .
 
-#if UNITY_EDITOR
         public bool _debugOn;
         public int _debugIndex;
-#endif
 
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void DebugMark(int index)
@@ -412,19 +432,20 @@ namespace Rito.FpsTpsCharacter
 
         #endregion
         /***********************************************************************
-        *                               Gizmos
+        *                               Gizmos, GUI
         ***********************************************************************/
         #region .
+
         private Vector3 _gzGroundTouch;
         private Vector3 _gzForwardGroundTouch;
         private Vector3 _gzForwardTouch;
         private Vector3 _gzRotatedWorldMoveDir;
-        
         private Vector3 _gzSlideDir; // 가파른 경사면에서 미끄럼틀 탈 방향
 
         [Header("Gizmos Option"), SerializeField, Range(0.1f, 2f)]
         private float _gizmoRadius = 0.1f;
 
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void OnDrawGizmos()
         {
             if (Application.isPlaying == false) return;
@@ -441,8 +462,8 @@ namespace Rito.FpsTpsCharacter
                 Gizmos.DrawSphere(_gzForwardTouch, _gizmoRadius);
             }
 
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(_gzGroundTouch, _gzGroundTouch + Current.groundCross * 2f);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(_gzGroundTouch - Current.groundCross, _gzGroundTouch + Current.groundCross);
 
             Gizmos.color = Color.black;
             Gizmos.DrawLine(transform.position, transform.position + _gzRotatedWorldMoveDir);
@@ -452,6 +473,76 @@ namespace Rito.FpsTpsCharacter
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(transform.position, transform.position + _gzSlideDir);
             }
+        }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        private void GzUpdateValue<T>(ref T variable, in T value)
+        {
+            variable = value;
+        }
+
+
+
+        [SerializeField, Space]
+        private bool _showGUI = true;
+        [SerializeField]
+        private int _guiTextSize = 28;
+
+        private float _prevForwardSlopeAngle;
+
+        private void OnGUI()
+        {
+            if(!_showGUI) return;
+
+            GUIStyle labelStyle = GUI.skin.label;
+            labelStyle.normal.textColor = Color.yellow;
+            labelStyle.fontSize = Math.Max(_guiTextSize, 20);
+
+            _prevForwardSlopeAngle = Current.forwardSlopeAngle == -90f ? _prevForwardSlopeAngle : Current.forwardSlopeAngle;
+
+            var oldColor = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.5f);
+            GUI.Box(new Rect(40, 40, 420, 260), "");
+            GUI.color = oldColor;
+
+            GUILayout.BeginArea(new Rect(50, 50, 1000, 500));
+            GUILayout.Label($"Ground Height : {Mathf.Min(Current.groundDistance, 99.99f): 00.00}", labelStyle);
+            GUILayout.Label($"Slope Angle(Ground)  : {Current.groundSlopeAngle: 00.00}", labelStyle);
+            GUILayout.Label($"Slope Angle(Forward) : {_prevForwardSlopeAngle: 00.00}", labelStyle);
+            GUILayout.Label($"Allowed Slope Angle : {MOption.maxSlopeAngle: 00.00}", labelStyle);
+            GUILayout.Label($"Current Slope Accel : {Current.slopeAccel: 00.00}", labelStyle);
+            GUILayout.Label($"Current Speed Mag  : {Current.finalVelocity.magnitude: 00.00}", labelStyle);
+            GUILayout.EndArea();
+
+            float sWidth = Screen.width;
+            float sHeight = Screen.height;
+
+            GUIStyle RTLabelStyle = GUI.skin.label;
+            RTLabelStyle.fontSize = 20;
+            RTLabelStyle.normal.textColor = Color.green;
+
+            oldColor = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, 0.5f);
+            GUI.Box(new Rect(sWidth - 355f, 5f, 340f, 100f), "");
+            GUI.color = oldColor;
+
+            float yPos = 10f;
+            GUI.Label(new Rect(sWidth - 350f, yPos, 150f, 30f), $"Speed : {MOption.speed: 00.00}", RTLabelStyle);
+            MOption.speed = GUI.HorizontalSlider(new Rect(sWidth - 200f, yPos+10f, 180f, 20f), MOption.speed, 1f, 10f);
+
+            yPos += 20f;
+            GUI.Label(new Rect(sWidth - 350f, yPos, 150f, 30f), $"Jump : {MOption.jumpForce: 00.00}", RTLabelStyle);
+            MOption.jumpForce = GUI.HorizontalSlider(new Rect(sWidth - 200f, yPos+ 10f, 180f, 20f), MOption.jumpForce, 1f, 10f);
+
+            yPos += 20f;
+            GUI.Label(new Rect(sWidth - 350f, yPos, 150f, 30f), $"Jump Count : {MOption.maxJumpCount: 0}", RTLabelStyle);
+            MOption.maxJumpCount = (int)GUI.HorizontalSlider(new Rect(sWidth - 200f, yPos+ 10f, 180f, 20f), MOption.maxJumpCount, 1f, 3f);
+
+            yPos += 20f;
+            GUI.Label(new Rect(sWidth - 350f, yPos, 150f, 30f), $"Max Slope : {MOption.maxSlopeAngle: 00}", RTLabelStyle);
+            MOption.maxSlopeAngle = (int)GUI.HorizontalSlider(new Rect(sWidth - 200f, yPos+ 10f, 180f, 20f), MOption.maxSlopeAngle, 1f, 75f);
+
+            labelStyle.fontSize = Math.Max(_guiTextSize, 20);
         }
 
         #endregion

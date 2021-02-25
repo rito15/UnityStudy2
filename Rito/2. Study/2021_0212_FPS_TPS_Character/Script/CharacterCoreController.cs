@@ -6,7 +6,7 @@ using UnityEngine;
 // 날짜 : 2021-02-12 PM 7:45:19
 // 작성자 : Rito
 
-namespace Rito.FpsTpsCharacter
+namespace Rito.CharacterControl
 {
     public class CharacterCoreController : MonoBehaviour
     {
@@ -150,7 +150,7 @@ namespace Rito.FpsTpsCharacter
         *                               Unity Events
         ***********************************************************************/
         #region .
-        private void Awake()
+        private void Start()
         {
             InitComponents();
             InitSettings();

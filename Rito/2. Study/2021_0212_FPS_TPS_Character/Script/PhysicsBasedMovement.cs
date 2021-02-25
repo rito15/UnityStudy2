@@ -6,7 +6,7 @@ using UnityEngine;
 // 날짜 : 2021-02-21 PM 8:23:22
 // 작성자 : Rito
 
-namespace Rito.FpsTpsCharacter
+namespace Rito.CharacterControl
 {
     public class PhysicsBasedMovement : MonoBehaviour
     {
@@ -69,6 +69,7 @@ namespace Rito.FpsTpsCharacter
             public bool isJumpTriggered;
             public bool isJumping;
             public bool isForwardBlocked;
+            public bool isOutOfControl; // 제어 불가 상태
         }
         [Serializable]
         public class CurrentValue
@@ -81,6 +82,7 @@ namespace Rito.FpsTpsCharacter
             [Space]
             public float jumpCooldown;
             public int jumpCount;
+            public float outOfControllDuration;
 
             [Space]
             public float groundDistance;
@@ -129,7 +131,7 @@ namespace Rito.FpsTpsCharacter
         *                               Unity Events
         ***********************************************************************/
         #region .
-        private void Awake()
+        private void Start()
         {
             InitComponents();
             InitSubComponents();
@@ -143,6 +145,8 @@ namespace Rito.FpsTpsCharacter
             CheckForwardSweepTest();
 
             UpdatePhysics();
+            UpdateValues();
+
             Move();
         }
 
@@ -158,6 +162,7 @@ namespace Rito.FpsTpsCharacter
 
             // 회전은 트랜스폼을 통해 직접 제어할 것이기 때문에 리지드바디 회전은 제한
             Com.rBody.constraints = RigidbodyConstraints.FreezeRotation;
+            Com.rBody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
         private void InitSubComponents()
@@ -208,6 +213,12 @@ namespace Rito.FpsTpsCharacter
             return true;
         }
 
+        public void SetOutOfControl(float time)
+        {
+            Current.outOfControllDuration = time;
+            ResetJump();
+        }
+
         public void StopMoving()
         {
             Current.worldMoveDir = Vector3.zero;
@@ -220,6 +231,14 @@ namespace Rito.FpsTpsCharacter
         *                               Private Methods
         ***********************************************************************/
         #region .
+
+        private void ResetJump()
+        {
+            Current.jumpCooldown = 0f;
+            Current.jumpCount = 0;
+            State.isJumping = false;
+            State.isJumpTriggered = false;
+        }
 
         /// <summary> 하단 지면 검사 </summary>
         private void CheckGroundSweepTest()
@@ -240,13 +259,13 @@ namespace Rito.FpsTpsCharacter
             {
                 // 뚝 끊기는 지형 부드럽게 이동하도록 구현 :
                 // 이동방향 전방으로 체크해서 이중 스윕테스트
-                Vector3 fwDownSweepDir = (Current.worldMoveDir + Vector3.down * 0.5f).normalized;
+                Vector3 fwDownSweepDir = (Current.worldMoveDir + Vector3.down * MOption.speed * 0.5f).normalized;
 
                 bool sweepFD =
                     Com.subRBody.SweepTest(fwDownSweepDir, out var hitFD, COption.groundCheckDistance, QueryTriggerInteraction.Ignore);
 
                 // 지면 노멀벡터 초기화
-                Current.groundNormal = sweepFD ? (hitD.normal + hitFD.normal) * 0.5f : hitD.normal;
+                Current.groundNormal = sweepFD ? hitFD.normal : hitD.normal;
 
                 // 현재 위치한 지면의 경사각 구하기(캐릭터 이동방향 고려)
                 Current.groundSlopeAngle = Vector3.Angle(Current.groundNormal, Vector3.up);
@@ -286,7 +305,7 @@ namespace Rito.FpsTpsCharacter
         private void CheckForwardSweepTest()
         {
             bool sweep =
-                Com.subRBody.SweepTest(Current.worldMoveDir + Vector3.down * 0.2f,
+                Com.subRBody.SweepTest(Current.worldMoveDir + Vector3.down * 0.1f,
                 out var hit, COption.forwardCheckDistance, QueryTriggerInteraction.Ignore);
 
             State.isForwardBlocked = false;
@@ -315,14 +334,28 @@ namespace Rito.FpsTpsCharacter
                 Current.gravity += _fixedDeltaTime * Physics.gravity.y;
                 Com.rBody.useGravity = true;
             }
+        }
 
+        private void UpdateValues()
+        {
             // Calculate Jump Cooldown
             if (Current.jumpCooldown > 0f)
                 Current.jumpCooldown -= _fixedDeltaTime;
+
+            // Out Of Control
+            State.isOutOfControl = Current.outOfControllDuration > 0f;
+
+            if (State.isOutOfControl)
+            {
+                Current.outOfControllDuration -= _fixedDeltaTime;
+                Current.worldMoveDir = Vector3.zero;
+            }
         }
 
         private void Move()
         {
+            if(State.isOutOfControl) return;
+
             // 0. 가파른 경사면에 있는 경우 : 꼼짝말고 미끄럼틀 타기
             if (State.isOnSteepSlope && Current.groundDistance < 0.1f)
             {
@@ -339,13 +372,6 @@ namespace Rito.FpsTpsCharacter
 
                 return;
             }
-            //else if (Current.forwardSlopeAngle > MOption.maxSlopeAngle)
-            //{
-            //    Current.finalVelocity = Vector3.zero;
-            //    Com.rBody.velocity = Com.rBody.velocity.y * Vector3.up;
-            //    Com.rBody.useGravity = true;
-            //    return;
-            //}
 
             // 1. XZ 이동속도 계산
             // 공중에서 전방이 막힌 경우 제한 (지상에서는 벽에 붙어서 이동할 수 있도록 허용)
@@ -353,27 +379,21 @@ namespace Rito.FpsTpsCharacter
             {
                 DebugMark(1);
 
-                Current.finalVelocity =
-                    //Mathf.Min(0f, Current.finalVelocity.y) * Vector3.up;
-                    Vector3.zero;
+                Current.finalVelocity = Vector3.zero;
             }
             else // 이동 가능한 경우 : 지상 or 전방이 막히지 않음
             {
                 DebugMark(2);
 
-                float speed = 0f;
-                if (State.isMoving)
-                {
-                    speed = MOption.speed;
-                    if (State.isRunning)
-                        speed *= MOption.runningCoef;
-                }
+                float speed = !State.isMoving ? 0f :
+                              !State.isRunning ? MOption.speed :
+                                                 MOption.speed * MOption.runningCoef;
 
                 Current.finalVelocity = Current.worldMoveDir * speed;
             }
 
-            // 2. 중력 합산
-            Current.finalVelocity.y += Current.gravity;
+            // 2. Y : 중력 합산
+            Current.finalVelocity.y = Current.gravity;
 
             // 3. 벡터 회전 및 최종 속도 계산
             if (State.isGrounded || Current.groundDistance < COption.groundCheckDistance && !State.isJumping) // 지상

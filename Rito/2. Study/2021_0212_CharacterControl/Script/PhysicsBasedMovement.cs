@@ -6,6 +6,8 @@ using UnityEngine;
 // 날짜 : 2021-02-21 PM 8:23:22
 // 작성자 : Rito
 
+// 단점 : 오를 수 없는 경사면으로 이동하려고 시도할 경우 지터링 발생
+
 namespace Rito.CharacterControl
 {
     public class PhysicsBasedMovement : MonoBehaviour
@@ -53,7 +55,7 @@ namespace Rito.CharacterControl
             [Range(0, 3), Tooltip("점프 허용 횟수")]
             public int maxJumpCount = 1;
 
-            [Range(15f, 70f), Tooltip("등반 가능한 경사각")]
+            [Range(1f, 70f), Tooltip("등반 가능한 경사각")]
             public float maxSlopeAngle = 50f;
 
             [Range(0f, 4f), Tooltip("경사로 이동속도 변화율(가속/감속)")]

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Rito.CharacterControl
 {
-    public class CharacterCoreController : MonoBehaviour
+    public class CharacterControllerCore : MonoBehaviour
     {
         /***********************************************************************
         *                               Definitions

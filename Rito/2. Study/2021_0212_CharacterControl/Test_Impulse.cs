@@ -8,22 +8,26 @@ public class Test_Impulse : MonoBehaviour
     [Range(1f, 100f)]
     public float _force = 10f;
 
+    [Range(0.1f, 2f)]
+    public float _uncontrollableTime = 0.5f;
+
     public ForceMode _forceMode = ForceMode.Impulse;
 
     private void OnTriggerEnter(Collider other)
     {
-
-        var rb = other.GetComponent<Rigidbody>();
-        var pbm = other.GetComponent<Rito.CharacterControl.PhysicsBasedMovement>();
-
-        if(!rb || !pbm) return;
+        Debug.Log("Trigger");
 
         Vector3 dir = (other.transform.position - transform.position).normalized;
-        //dir.y = 0.05f - (other.transform.position.y - transform.position.y) * 0.5f;
 
-        rb.AddForce(dir * _force, _forceMode);
-        pbm.SetOutOfControl(1f);
+        var ccc = other.GetComponent<Rito.CharacterControl.CharacterMainController>();
+        if(ccc) ccc.KnockBack(dir * _force, _uncontrollableTime);
+    }
 
-        Debug.Log("Knock Back !");
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Vector3 dir = (hit.transform.position - transform.position).normalized;
+        hit.rigidbody.AddForce(dir * _force, _forceMode);
+
+        Debug.Log("CC Hit");
     }
 }

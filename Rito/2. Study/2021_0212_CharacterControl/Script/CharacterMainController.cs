@@ -8,8 +8,23 @@ using UnityEngine;
 
 namespace Rito.CharacterControl
 {
-    public class CharacterControllerCore : MonoBehaviour
+    public class CharacterMainController : MonoBehaviour
     {
+        /*
+
+            [하이라키 구조]
+
+            Character Root [ CharacterMainController, Movement3D, Rigidbody, Capsule Collider ]
+              ㄴTP Root    [ Pos(0,   1,   0) , Rot(0,  0, 0) ]
+                ㄴTP Rig   [ Pos(0,   0,   0) , Rot(0, 45, 0) ]
+                  ㄴTP Cam [ Pos(0,   0,  -4) , Rot(0,  0, 0), Camera Component ]
+              ㄴWalker     [ Pos(0,   1,   0) , Rot(0,  0, 0) ]
+                ㄴFP Rig   [ Pos(0, 1.3, 0.2) , Rot(0,  0, 0) ]
+                  ㄴFP Cam [ Pos(0, 1.3, 0.2) , Rot(0,  0, 0), Camera Component ]
+                ㄴModel Root
+
+        */
+
         /***********************************************************************
         *                               Definitions
         ***********************************************************************/
@@ -31,7 +46,7 @@ namespace Rito.CharacterControl
             [HideInInspector] public GameObject fpCamObject;
 
             [HideInInspector] public Animator anim;
-            [HideInInspector] public PhysicsBasedMovement pbMove;
+            [HideInInspector] public IMovement3D movement3D;
         }
         [Serializable]
         public class KeyOption
@@ -194,9 +209,10 @@ namespace Rito.CharacterControl
             Com.fpRig = Com.fpCamera.transform.parent;
             Com.walker = Com.fpRig.parent;
 
-            TryGetComponent(out Com.pbMove);
-            if(Com.pbMove == null)
-                Com.pbMove = gameObject.AddComponent<PhysicsBasedMovement>();
+            TryGetComponent(out Com.movement3D);
+            //if(Com.movement3D == null)
+            //    Com.movement3D = gameObject.AddComponent<PhysicsBasedMovement>();
+                //Com.pbMove = gameObject.AddComponent<Test.PBMove2>();
         }
 
         private void InitSettings()
@@ -438,8 +454,8 @@ namespace Rito.CharacterControl
         /// <summary> 땅으로부터의 거리 체크 - 애니메이터 전달용 </summary>
         private void CheckGroundDistance()
         {
-            _distFromGround = Com.pbMove.DistanceFromGround;
-            State.isGrounded = Com.pbMove.IsGrounded;
+            _distFromGround = Com.movement3D.GetDistanceFromGround();
+            State.isGrounded = Com.movement3D.IsGrounded();
         }
 
         private void SendMoveInfo(float horizontal, float vertical)
@@ -455,12 +471,12 @@ namespace Rito.CharacterControl
                 _worldMoveDir = Com.tpRoot.TransformDirection(_moveDir);
             }
 
-            Com.pbMove.SetMovement(_worldMoveDir, State.isRunning);
+            Com.movement3D.SetMovement(_worldMoveDir, State.isRunning);
         }
 
         private void Jump()
         {
-            bool jumpSucceeded = Com.pbMove.SetJump();
+            bool jumpSucceeded = Com.movement3D.SetJump();
 
             if (jumpSucceeded)
             {
@@ -470,6 +486,16 @@ namespace Rito.CharacterControl
                 Debug.Log("JUMP");
             }
         }
+        #endregion
+        /***********************************************************************
+        *                               Public Methods
+        ***********************************************************************/
+        #region .
+        public void KnockBack(in Vector3 force, float time)
+        {
+            Com.movement3D.KnockBack(force, time);
+        }
+
         #endregion
     }
 }

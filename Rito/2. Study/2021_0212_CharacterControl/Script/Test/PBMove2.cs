@@ -136,8 +136,44 @@ namespace Rito.CharacterControl.Test
         #region .
         private void Start()
         {
-            InitComponents();
-            InitSubComponents();
+            //InitComponents();
+            //InitSubComponents();
+            Destroy(gameObject.GetComponent<Rigidbody>());
+            Destroy(gameObject.GetComponent<CapsuleCollider>());
+
+            cc = gameObject.GetComponent<CharacterController>();
+
+            Debug.Log(cc.attachedRigidbody);
+        }
+
+        CharacterController cc;
+
+        Vector3 moveDir;
+
+
+        [Space, SerializeField, Range(-9.81f, -1f)]
+        private float _ccGravity = -9.81f;
+
+        private void Update()
+        {
+            moveDir.x = Current.worldMoveDir.x;
+            moveDir.z = Current.worldMoveDir.z;
+            if (State.isRunning) moveDir *= 2f;
+
+            if (Input.GetKeyDown(KeyCode.V) && cc.isGrounded)
+            {
+                moveDir.y = MOption.jumpForce;
+            }
+
+            // 플레이어가 땅을 밟고 있지 않다면
+            // y축 이동방향에 gravity * Time.deltaTime을 더해준다
+            if (cc.isGrounded == false)
+            {
+                moveDir.y += _ccGravity * Time.deltaTime;
+            }
+
+            cc.Move(moveDir * MOption.speed * Time.deltaTime);
+
         }
 
         private void FixedUpdate()
@@ -145,11 +181,11 @@ namespace Rito.CharacterControl.Test
             _fixedDeltaTime = Time.fixedDeltaTime;
 
             //UpdateValues();
-            CheckGroundSweepTest();
-            CheckForwardSweepTest();
+            //CheckGroundSweepTest();
+            //CheckForwardSweepTest();
 
-            Move();
-            CalculateGravity();
+            //Move();
+            //CalculateGravity();
         }
 
         #endregion
@@ -282,10 +318,10 @@ namespace Rito.CharacterControl.Test
             if(State.isForwardBlocked) return;
             //if(State.isOnSteepSlope) return;
 
-            Vector3 nextMoveDir =
-                State.isOnSteepSlope ? Current.worldMoveDir :
-                Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross)
-                    * Current.worldMoveDir;
+            Vector3 nextMoveDir = Current.worldMoveDir;
+                //State.isOnSteepSlope ? Current.worldMoveDir :
+                //Quaternion.AngleAxis(-Current.groundSlopeAngle, Current.groundCross)
+                //    * Current.worldMoveDir;
 
             _nextMovePos = Com.rBody.position +
                 nextMoveDir * MOption.speed * _fixedDeltaTime;
@@ -295,6 +331,8 @@ namespace Rito.CharacterControl.Test
 
         private void CalculateGravity()
         {
+            Com.rBody.useGravity = true; return;
+
             if (State.isOnSteepSlope || State.isForwardBlocked)
             {
                 Com.rBody.velocity -= Vector3.up * 9.81f * _fixedDeltaTime;

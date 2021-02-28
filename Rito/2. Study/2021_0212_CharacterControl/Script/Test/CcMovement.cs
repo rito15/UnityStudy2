@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Rito.CharacterControl.Test
 {
-    public class PBMove2 : MonoBehaviour
+    public class CcMovement : MonoBehaviour, IMovement3D
     {
         /***********************************************************************
         *                               Definitions
@@ -160,10 +160,10 @@ namespace Rito.CharacterControl.Test
             moveDir.z = Current.worldMoveDir.z;
             if (State.isRunning) moveDir *= 2f;
 
-            if (Input.GetKeyDown(KeyCode.V) && cc.isGrounded)
-            {
-                moveDir.y = MOption.jumpForce;
-            }
+            //if (Input.GetKeyDown(KeyCode.V) && cc.isGrounded)
+            //{
+            //    moveDir.y = MOption.jumpForce;
+            //}
 
             // 플레이어가 땅을 밟고 있지 않다면
             // y축 이동방향에 gravity * Time.deltaTime을 더해준다
@@ -350,14 +350,21 @@ namespace Rito.CharacterControl.Test
         ***********************************************************************/
         #region .
 
-        public void SetMovement(in Vector3 worldMove, bool runningState)
+        float IMovement3D.GetDistanceFromGround() => 0f;
+        bool IMovement3D.IsMoving() => State.isMoving;
+        bool IMovement3D.IsGrounded() => State.isGrounded;
+        void IMovement3D.StopMoving() { }
+        void IMovement3D.KnockBack(in Vector3 force, float time) { }
+
+        void IMovement3D.SetMovement(in Vector3 worldMove, bool runningState)
         {
             Current.worldMoveDir = !runningState ? worldMove : worldMove * MOption.runningCoef;
         }
 
-        public bool SetJump()
+        bool IMovement3D.SetJump()
         {
-            Com.rBody.AddForce(MOption.jumpForce * Current.groundNormal, ForceMode.VelocityChange);
+            //Com.rBody.AddForce(MOption.jumpForce * Current.groundNormal, ForceMode.VelocityChange);
+            moveDir.y = MOption.jumpForce;
 
             return true;
         }

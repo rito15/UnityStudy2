@@ -8443,10 +8443,7 @@ GameObject:
   m_Component:
   - component: {fileID: 578180493}
   - component: {fileID: 578180496}
-  - component: {fileID: 578180495}
   - component: {fileID: 578180494}
-  - component: {fileID: 578180497}
-  - component: {fileID: 578180498}
   m_Layer: 0
   m_Name: Character Root
   m_TagString: Untagged
@@ -8470,110 +8467,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &578180494
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 578180492}
-  serializedVersion: 2
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_UseGravity: 0
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 112
-  m_CollisionDetection: 2
---- !u!136 &578180495
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 578180492}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  m_Radius: 0.2
-  m_Height: 1.6
-  m_Direction: 1
-  m_Center: {x: 0, y: 0.8, z: 0}
---- !u!114 &578180496
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 578180492}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c777f38ec0e4c7499912d6e36df7905, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _components:
-    tpCamera: {fileID: 1873147401}
-    fpCamera: {fileID: 1929600736}
-    tpRoot: {fileID: 0}
-    tpRig: {fileID: 0}
-    walker: {fileID: 0}
-    fpRig: {fileID: 0}
-    tpCamObject: {fileID: 0}
-    fpCamObject: {fileID: 0}
-    anim: {fileID: 0}
-  _keyOption:
-    moveForward: 119
-    moveBackward: 115
-    moveLeft: 97
-    moveRight: 100
-    run: 304
-    jump: 32
-    switchCamera: 9
-    showCursor: 308
-  _cameraOption:
-    initialCamera: 1
-    rotationSpeed: 2
-    lookUpDegree: -60
-    lookDownDegree: 75
-    zoomInDistance: 3
-    zoomOutDistance: 3
-    zoomSpeed: 20
-    zoomAccel: 0.1
-  _animatorOption:
-    paramMoveX: Move X
-    paramMoveZ: Move Z
-    paramDistY: Dist Y
-    paramGrounded: Grounded
-    paramJump: Jump
-  _state:
-    isCurrentFp: 0
-    isMoving: 0
-    isRunning: 0
-    isGrounded: 0
-    isCursorActive: 0
-  _distFromGround: 0
-  _moveDir: {x: 0, y: 0, z: 0}
-  _worldMoveDir: {x: 0, y: 0, z: 0}
---- !u!143 &578180497
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 578180492}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Height: 1.6
-  m_Radius: 0.2
-  m_SlopeLimit: 45
-  m_StepOffset: 0.3
-  m_SkinWidth: 0.08
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0.8, z: 0}
---- !u!114 &578180498
+--- !u!114 &578180494
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8633,6 +8527,61 @@ MonoBehaviour:
   _gizmoRadius: 0.05
   _showGUI: 1
   _guiTextSize: 28
+--- !u!114 &578180496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 578180492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c777f38ec0e4c7499912d6e36df7905, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _components:
+    tpCamera: {fileID: 1873147401}
+    fpCamera: {fileID: 1929600736}
+    tpRoot: {fileID: 0}
+    tpRig: {fileID: 0}
+    walker: {fileID: 0}
+    fpRig: {fileID: 0}
+    tpCamObject: {fileID: 0}
+    fpCamObject: {fileID: 0}
+    anim: {fileID: 0}
+  _keyOption:
+    moveForward: 119
+    moveBackward: 115
+    moveLeft: 97
+    moveRight: 100
+    run: 304
+    jump: 32
+    switchCamera: 9
+    showCursor: 308
+  _cameraOption:
+    initialCamera: 1
+    rotationSpeed: 2
+    lookUpDegree: -60
+    lookDownDegree: 75
+    zoomInDistance: 3
+    zoomOutDistance: 3
+    zoomSpeed: 20
+    zoomAccel: 0.1
+  _animatorOption:
+    paramMoveX: Move X
+    paramMoveZ: Move Z
+    paramDistY: Dist Y
+    paramGrounded: Grounded
+    paramJump: Jump
+  _state:
+    isCurrentFp: 0
+    isMoving: 0
+    isRunning: 0
+    isGrounded: 0
+    isCursorActive: 0
+  _distFromGround: 0
+  _moveDir: {x: 0, y: 0, z: 0}
+  _worldMoveDir: {x: 0, y: 0, z: 0}
 --- !u!1 &652340475
 GameObject:
   m_ObjectHideFlags: 0

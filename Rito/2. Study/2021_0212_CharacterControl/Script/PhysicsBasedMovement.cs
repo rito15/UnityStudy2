@@ -135,7 +135,8 @@ namespace Rito.CharacterControl
         #region .
         private void Start()
         {
-            InitComponents();
+            InitRigidbody();
+            InitCapsuleCollider();
         }
 
         private void FixedUpdate()
@@ -157,15 +158,69 @@ namespace Rito.CharacterControl
         *                               Init Methods
         ***********************************************************************/
         #region .
-        private void InitComponents()
+
+        private void InitRigidbody()
         {
             TryGetComponent(out Com.rBody);
-            TryGetComponent(out Com.capsule);
+            if (Com.rBody == null) Com.rBody = gameObject.AddComponent<Rigidbody>();
 
-            // 회전은 트랜스폼을 통해 직접 제어할 것이기 때문에 리지드바디 회전은 제한
+            // 회전은 자식 트랜스폼을 통해 직접 제어할 것이기 때문에 리지드바디 회전은 제한
             Com.rBody.constraints = RigidbodyConstraints.FreezeRotation;
             Com.rBody.interpolation = RigidbodyInterpolation.Interpolate;
+            Com.rBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             Com.rBody.useGravity = false; // 중력 직접 제어
+        }
+
+        private void InitCapsuleCollider()
+        {
+            TryGetComponent(out Com.capsule);
+            if (Com.capsule == null)
+            {
+                Com.capsule = gameObject.AddComponent<CapsuleCollider>();
+
+                // 렌더러를 모두 탐색하여 높이 결정
+                float maxHeight = -1f;
+
+                // 1. SMR 확인
+                var smrArr = GetComponentsInChildren<SkinnedMeshRenderer>();
+                if (smrArr.Length > 0)
+                {
+                    foreach (var smr in smrArr)
+                    {
+                        foreach (var vertex in smr.sharedMesh.vertices)
+                        {
+                            if(maxHeight < vertex.y)
+                                maxHeight = vertex.y;
+                        }
+                    }
+                }
+                // 2. MR 확인
+                else
+                {
+                    var mfArr = GetComponentsInChildren<MeshFilter>();
+                    if (mfArr.Length > 0)
+                    {
+                        foreach (var mf in mfArr)
+                        {
+                            foreach (var vertex in mf.mesh.vertices)
+                            {
+                                if (maxHeight < vertex.y)
+                                    maxHeight = vertex.y;
+                            }
+                        }
+                    }
+                }
+
+                // 3. 캡슐 콜라이더 값 설정
+                if (maxHeight <= 0)
+                    maxHeight = 1f;
+
+                float center = maxHeight * 0.5f;
+
+                Com.capsule.height = maxHeight;
+                Com.capsule.center = Vector3.up * center;
+                Com.capsule.radius = 0.2f;
+            }
 
             _castRadius = Com.capsule.radius * 0.9f;
             _capsuleRadiusDiff = Com.capsule.radius - _castRadius + 0.05f;
@@ -467,6 +522,7 @@ namespace Rito.CharacterControl
         {
             if (Application.isPlaying == false) return;
             if (!_showGizmos) return;
+            if(!enabled) return;
 
             Gizmos.color = Color.red;
             Gizmos.DrawSphere(_gzGroundTouch, _gizmoRadius);
@@ -505,7 +561,9 @@ namespace Rito.CharacterControl
 
         private void OnGUI()
         {
-            if(!_showGUI) return;
+            if (Application.isPlaying == false) return;
+            if (!_showGUI) return;
+            if (!enabled) return;
 
             GUIStyle labelStyle = GUI.skin.label;
             labelStyle.normal.textColor = Color.yellow;

@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
+using UnityEngine.UI;
 
 using UniRx;
 using UniRx.Triggers;
@@ -9,112 +11,45 @@ using UniRx.Triggers;
 using Rito.UnityLibrary.Tester;
 using Debug = Rito.UnityLibrary.Debug;
 
-using System.Threading;
 
 // 날짜 : 2021-03-06 PM 8:44:40
 // 작성자 : Rito
 
 public class Test_Unirx : MonoBehaviour
 {
-    public int _repeatCount = 100000;
-    public float _fValue = 1f;
+    public Button _targetButton;
+    public Button _targetButton2;
+
+    [Range(0, 1)]
+    public float _value;
 
     private void Start()
     {
-        //MainThreadDispatcher.StartCoroutine(TestRoutine());
+        //EventAsStream();
+        //DragAndDrop();
+        //LifeSpan();
+        CheckDoubleClickImmediatley();
+
+        //CheckDoubleKeyPress(KeyCode.A, () => transform.Translate(Vector3.left * Time.deltaTime * 5f));
+        //CheckDoubleKeyPress(KeyCode.D, () => transform.Translate(Vector3.right * Time.deltaTime * 5f));
+        CheckDoubleKeyPressImmediatley(KeyCode.W, () => Debug.Log("WW"));
+
+        //ObserveValueChanged();
     }
+
+    // T o D o : 그냥 변수의 값 변화 인식
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
+
+
+
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            Calculate();
+            Debug.Log(_targetButton == null, ReferenceEquals(_targetButton, null));
+            if(_targetButton == null)
+                _targetButton = null;
         }
-
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            CalculateUniRxMultithread();
-        }
-
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            CalculateCSharpMultithread();
-        }
-    }
-
-    private void Calculate()
-    {
-        int[] arr = new int[_repeatCount];
-
-        RitoWatch.BeginCheck("Calculate");
-        for (int i = 0; i < _repeatCount; i++)
-        {
-            arr[i] = i * i + i / (i + 1);
-        }
-
-        RitoWatch.EndCheck();
-        RitoWatch.PrintAllLogs();
-        RitoWatch.Clear();
-    }
-
-    private void CalculateUniRxMultithread()
-    {
-        int threadCount = 4;
-        int range = _repeatCount / threadCount;
-
-        int[] ranges = new int[threadCount + 1];
-        for (int i = 0; i < ranges.Length; i++)
-        {
-            ranges[i] = i * range;
-        }
-
-        int[] arr = new int[_repeatCount];
-
-        List<IObservable<Unit>> threadList = new List<IObservable<Unit>>();
-
-        for (int j = 0; j < threadCount; j++)
-        {
-            threadList.Add(
-                Observable.Start(() =>
-                {
-                    for (int i = ranges[j]; i < ranges[j + 1]; i++)
-                    {
-                        arr[i] = i * i + i / (i + 1);
-                    }
-                })
-            );
-        }
-
-        RitoWatch.BeginCheck("Calculate With Unirx Threads");
-
-        Observable.WhenAll(threadList)
-            .ObserveOnMainThread()
-            .Subscribe();
-
-        RitoWatch.EndCheck();
-        RitoWatch.PrintAllLogs();
-        RitoWatch.Clear();
-    }
-
-    private void CalculateCSharpMultithread()
-    {
-        int[] arr = new int[_repeatCount];
-
-        ThreadPool.SetMaxThreads(4, 4);
-
-        RitoWatch.BeginCheck("Calculate With Unirx Threads");
-
-        for (int i = 0; i < _repeatCount; i++)
-        {
-            ThreadPool.QueueUserWorkItem(_ =>
-                {
-                    arr[i] = i * i + i / (i + 1);
-                }
-            );
-        }
-        RitoWatch.EndCheck();
-        RitoWatch.PrintAllLogs();
-        RitoWatch.Clear();
     }
 
     private void CheckDoubleClick()
@@ -140,10 +75,102 @@ public class Test_Unirx : MonoBehaviour
         //dbClickStreamDisposable.Dispose();
     }
 
-    private IEnumerator TestRoutine()
+    private void CheckDoubleClickImmediatley()
     {
-        //Debug.Log("Coroutine Begin");
-        yield return new WaitForSeconds(1f);
-        //Debug.Log("Coroutine End");
+        // 목표 : 두 번째 클릭을 인지하는 순간 OnNext 발생
+
+        // 제대로 감지 못하는 버그 존재
+        Observable.EveryUpdate().Where(_ => Input.GetMouseButtonDown(0))
+            .Buffer(TimeSpan.FromMilliseconds(500), 2)
+            .Where(buffer => buffer.Count >= 2)
+            .Subscribe(_ => Debug.Log("DoubleClicked!"));
+    }
+
+    // 일정 시간 내의 동일한 키보드 연속 2회 이상 입력 후 유지
+    private void CheckDoubleKeyPress(KeyCode key, Action action)
+    {
+        var keyDownStream = 
+            Observable.EveryUpdate().Where(_ => Input.GetKeyDown(key));
+
+        var keyUpStream = 
+            Observable.EveryUpdate().Where(_ => Input.GetKeyUp(key));
+
+        var keyPressStream = 
+            Observable.EveryUpdate().Where(_ => Input.GetKey(key))
+                .TakeUntil(keyUpStream);
+
+        var dbKeyStreamDisposable =
+            keyDownStream
+                .Buffer(keyDownStream.Throttle(TimeSpan.FromMilliseconds(300)))
+                .Where(x => x.Count >= 2)
+                .SelectMany(_ => keyPressStream)
+                .TakeUntilDisable(this)
+                .Subscribe(_ => action());
+    }
+
+    // 일정 시간 내의 동일한 키보드 연속 2회 이상 입력 후 유지 (마지막 입력으로부터 즉시)
+    private void CheckDoubleKeyPressImmediatley(KeyCode key, Action action)
+    {
+        // TODO : 1회 입력, 2회 입력 유지 이후 액션 분기 구현
+        //Subject<bool> keyPressed, doublePressed;
+
+        var keyUpStream = 
+            Observable.EveryUpdate().Where(_ => Input.GetKeyUp(key));
+
+        var keyPressStream = 
+            Observable.EveryUpdate().Where(_ => Input.GetKey(key));
+
+        var doubleKeyPressStreamDisposable =
+            Observable.EveryUpdate().Where(_ => Input.GetKeyDown(key))
+                .Buffer(TimeSpan.FromMilliseconds(500), 2)
+                .Where(buffer => buffer.Count >= 2)
+                .SelectMany(_ => keyPressStream.TakeUntil(keyUpStream))
+                .TakeUntilDisable(this)
+                .Subscribe(_ => action());
+
+                //.Subscribe(_ => doublePressed.OnNext(true));
+
+        //var keyUpStreamDisposable = 
+        //    keyUpStream.Subscribe(_ => keyPressed.OnNext(false));
+
+        //var keyPressStreamStreamDisposable =
+        //    keyPressStream.Subscribe(_ => keyPressed.OnNext(true));
+    }
+
+    private void EventAsStream()
+    {
+        var buttonStream =
+        _targetButton.onClick.AsObservable()
+            //.TakeUntil(_targetButton2.onClick.AsObservable())
+            .TakeUntilDestroy(_targetButton)
+            .Subscribe(
+                _  => Debug.Log("Click!"),
+                _  => Debug.Log("Error"),
+                () => Debug.Log("Completed")
+            );
+    }
+
+    private void DragAndDrop()
+    {
+        this.OnMouseDownAsObservable()
+            .SelectMany(_ => this.UpdateAsObservable())
+            .TakeUntil(this.OnMouseUpAsObservable())
+            .Select(_ => Input.mousePosition)
+            .RepeatUntilDestroy(this) // Safe Repeating
+            .Subscribe(x => Debug.Log(x));
+    }
+
+    private void LifeSpan()
+    {
+        Observable.Timer(TimeSpan.FromSeconds(3.0))
+            .TakeUntilDisable(this)
+            .Subscribe(_ => Destroy(gameObject));
+    }
+
+    private void ObserveValueChanged()
+    {
+        // ObserveEveryValueChanged : 클래스 타입에 대해 모두 사용 가능
+        this.ObserveEveryValueChanged(x => x._value)
+            .Subscribe(x => Debug.Log("Value Changed : " + x));
     }
 }

@@ -4,6 +4,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+/*
+
+   TODO
+
+   - 그래픽 레이캐스터 이용해서 드래그앤 드롭으로 놓았을 때, 놓은 지점 아이콘 2개 이용해서
+     서로의 이미지 바꾸기 (추후 : 아이템 정보도 교환)
+
+   - 놓았을 때 놓은 지점에 아이콘이 1개라면 허공에 놓았다고 간주하여 버리도록
+
+*/
+
 // 날짜 : 2021-03-07 PM 7:34:31
 // 작성자 : Rito
 
@@ -37,7 +49,6 @@ namespace Rito.InventorySystem
         private GraphicRaycaster _gr;
 
         #endregion
-
         /***********************************************************************
         *                               Unity Events
         ***********************************************************************/

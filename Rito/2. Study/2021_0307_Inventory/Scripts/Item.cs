@@ -11,7 +11,8 @@ namespace Rito.InventorySystem
 {
     public class Item
     {
-        public ItemInfo info;
-        public int number;
+        public ItemData Data { get; private set; }
+
+        public Item(ItemData data) => Data = data;
     }
 }

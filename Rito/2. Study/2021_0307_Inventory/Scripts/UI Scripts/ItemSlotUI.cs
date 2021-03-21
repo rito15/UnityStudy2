@@ -39,8 +39,11 @@ namespace Rito.InventorySystem
         #region .
         private InventoryUI _inventoryUI;
         private GameObject _iconGo;
+        private GameObject _textGo;
         private RectTransform _iconRect;
-        private Image _iconImage;
+
+        [SerializeField] private Image _iconImage; // 아이템 아이콘 : 직접 등록(자식)
+        [SerializeField] private Text _amountText; // 아이템 개수 텍스트
 
         #endregion
         /***********************************************************************
@@ -49,7 +52,8 @@ namespace Rito.InventorySystem
         #region .
         private void Awake()
         {
-            Init();
+            InitComponents();
+            InitValues();
         }
 
         #endregion
@@ -57,13 +61,16 @@ namespace Rito.InventorySystem
         *                               Private Methods
         ***********************************************************************/
         #region .
-        private void Init()
+        private void InitComponents()
         {
             _inventoryUI = GetComponentInParent<InventoryUI>();
-            _iconRect = transform.GetChild(0).GetComponent<RectTransform>();
-            _iconGo = _iconRect.gameObject;
-            _iconImage = _iconRect.GetComponent<Image>();
 
+            _iconRect = _iconImage.rectTransform;
+            _iconGo = _iconRect.gameObject;
+            _textGo = _amountText.gameObject;
+        }
+        private void InitValues()
+        {
             // 1. Item Rect
             _iconRect.pivot = new Vector2(0.5f, 0.5f);
             _iconRect.anchorMin = Vector2.zero;
@@ -83,6 +90,9 @@ namespace Rito.InventorySystem
         private void ShowIcon() => _iconGo.SetActive(true);
         private void HideIcon() => _iconGo.SetActive(false);
 
+        private void ShowText() => _textGo.SetActive(true);
+        private void HideText() => _textGo.SetActive(false);
+
         #endregion
         /***********************************************************************
         *                               Public Methods
@@ -92,7 +102,7 @@ namespace Rito.InventorySystem
         public void SetSlotIndex(int index) => Index = index;
 
         /// <summary> 다른 슬롯과 아이템 아이콘 교환 </summary>
-        public void ExchangeOrMoveIcon(ItemSlotUI other)
+        public void SwapOrMoveIcon(ItemSlotUI other)
         {
             if (other == null) return;
 
@@ -130,6 +140,17 @@ namespace Rito.InventorySystem
             _iconImage.color = new Color(
                 _iconImage.color.r, _iconImage.color.g, _iconImage.color.b, alpha
             );
+        }
+
+        /// <summary> 아이템 개수 텍스트 설정 </summary>
+        public void SetItemAmount(int amount)
+        {
+            if(HasItem && amount > 1)
+                ShowText();
+            else
+                HideText();
+
+            _amountText.text = amount.ToString();
         }
 
         #endregion

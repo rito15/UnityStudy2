@@ -7,10 +7,12 @@ using UnityEngine.EventSystems;
 
 
 /*
-
-   TODO
-
-
+    [기능]
+    - 에디터모드에서 슬롯 미리보기
+    - 아이템 드래그 앤 드롭으로 이동, 교환, 버리기
+    - 슬롯에 아이템 등록
+    - 슬롯에서 아이템 제거
+    - 개수 수정
 */
 
 // 날짜 : 2021-03-07 PM 7:34:31
@@ -141,16 +143,17 @@ namespace Rito.InventorySystem
                 curPos.x = beginPos.x;
                 curPos.y -= (_slotMargin + _slotSize);
             }
+
+            RectTransform CloneSlot()
+            {
+                GameObject slotGo = Instantiate(_slotUiPrefab);
+                RectTransform rt = slotGo.GetComponent<RectTransform>();
+                rt.transform.SetParent(_contentAreaRT.transform);
+
+                return rt;
+            }
         }
 
-        private RectTransform CloneSlot()
-        {
-            GameObject slotGo = Instantiate(_slotUiPrefab);
-            RectTransform rt = slotGo.GetComponent<RectTransform>();
-            rt.transform.SetParent(_contentAreaRT.transform);
-
-            return rt;
-        }
 
         private bool IsOverUI()
             => EventSystem.current.IsPointerOverGameObject();
@@ -208,7 +211,7 @@ namespace Rito.InventorySystem
 
                 if (slot != null && slot.HasItem)
                 {
-                    //
+                    EditorLog($"Use Item : Slot [{slot.Index}]");
                 }
             }
         }
@@ -247,25 +250,28 @@ namespace Rito.InventorySystem
 
         private void EndDrag()
         {
-            bool isHandled = false;
-
             ItemSlotUI endDragSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
 
-            // 아이템 슬롯끼리 아이콘 교환 또는 전이
+            // 아이템 슬롯끼리 아이콘 교환 또는 이동
             if (endDragSlot != null)
             {
-                EditorLog($"Drag End({(endDragSlot.HasItem ? "Exchange" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
+                EditorLog($"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
 
-                _beginDragSlot.ExchangeOrMoveIcon(endDragSlot);
-                isHandled = true;
+                _beginDragSlot.SwapOrMoveIcon(endDragSlot);
+                return;
             }
 
-            // 버리기(UI 바깥에만)
-            if (!isHandled && !IsOverUI())
+            // 버리기(커서가 UI 레이캐스트 타겟 위에 있지 않은 경우)
+            if (!IsOverUI())
             {
                 EditorLog($"Drag End(Remove) : Slot [{_beginDragSlot.Index}]");
 
                 TryRemoveItem(_beginDragSlot.Index);
+            }
+            // 슬롯이 아닌 다른 UI 위에 놓은 경우
+            else
+            {
+                EditorLog($"Drag End(Do Nothing)");
             }
         }
 
@@ -284,15 +290,23 @@ namespace Rito.InventorySystem
             _mouseReversed = value;
         }
 
-        public void TryAddItem(int index, Sprite icon)
+        /// <summary> 슬롯에 아이템 아이콘 등록 : Inventory에서만 호출 </summary>
+        public void SetItem(int index, Sprite icon)
         {
-            EditorLog($"Add Item : Slot [{index}]");
-
-            // Inventory.Add()
+            EditorLog($"Set Item : Slot [{index}]");
 
             _slotUIList[index].SetItem(icon);
         }
-        
+
+        /// <summary> 해당 슬롯의 아이템 개수 텍스트 지정 </summary>
+        public void SetItemAmount(int index, int amount)
+        {
+            EditorLog($"Set Item Amount : Slot [{index}], Amount [{amount}]");
+
+            _slotUIList[index].SetItemAmount(amount);
+        }
+
+        /// <summary> UI 및 인벤토리에서 아이템 제거 </summary>
         public void TryRemoveItem(int index)
         {
             EditorLog($"Remove Item : Slot [{index}]");
@@ -351,13 +365,15 @@ namespace Rito.InventorySystem
 
         private void OnValidate()
         {
-            if(Application.isPlaying) return;
-
             if (__prevMouseReversed != _mouseReversed)
             {
                 __prevMouseReversed = _mouseReversed;
                 InvertMouse(_mouseReversed);
+
+                EditorLog($"Mouse Reversed : {_mouseReversed}");
             }
+
+            if (Application.isPlaying) return;
 
             if (__showPreview && !__prevShow)
             {
@@ -434,6 +450,8 @@ namespace Rito.InventorySystem
                     slotGo.SetActive(true);
                     slotGo.AddComponent<PreviewItemSlot>();
 
+                    slotGo.transform.localScale = Vector3.one; // 버그 해결
+
                     HideGameObject(slotGo);
 
                     __previewSlotGoList.Add(slotGo);
@@ -447,7 +465,7 @@ namespace Rito.InventorySystem
                 Vector2 beginPos = new Vector2(_contentAreaPadding, -_contentAreaPadding);
                 Vector2 curPos = beginPos;
 
-                // Draw Slot Grid
+                // Draw Slots
                 int index = 0;
                 for (int j = 0; j < _slotLineCount; j++)
                 {

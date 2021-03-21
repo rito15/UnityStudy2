@@ -562,7 +562,7 @@ GameObject:
   - component: {fileID: 559324440}
   - component: {fileID: 559324441}
   m_Layer: 0
-  m_Name: Spline (8)
+  m_Name: Spline (7)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

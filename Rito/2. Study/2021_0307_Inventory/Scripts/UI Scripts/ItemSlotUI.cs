@@ -10,8 +10,7 @@ using UnityEngine.EventSystems;
 
 namespace Rito.InventorySystem
 {
-    public class ItemSlotUI : MonoBehaviour, 
-        IPointerDownHandler, IDragHandler, IEndDragHandler
+    public class ItemSlotUI : MonoBehaviour
     {
         /***********************************************************************
         *                               Option Fields
@@ -31,8 +30,7 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯이 아이템을 보유하고 있는지 여부 </summary>
         public bool HasItem => _iconImage.sprite != null;
 
-        /// <summary> 성공적으로 드래그를 하고 있는지 여부 </summary>
-        public bool IsDragging { get; private set; }
+        public RectTransform IconRect => _iconRect;
 
         #endregion
         /***********************************************************************
@@ -44,10 +42,6 @@ namespace Rito.InventorySystem
         private RectTransform _iconRect;
         private Image _iconImage;
 
-        private Vector2 _startingPoint;
-        private Vector2 _moveBegin;
-        private int _sbIndex;
-
         #endregion
         /***********************************************************************
         *                               Unity Events
@@ -56,44 +50,6 @@ namespace Rito.InventorySystem
         private void Awake()
         {
             Init();
-        }
-
-        #endregion
-        /***********************************************************************
-        *                               Pointer Events
-        ***********************************************************************/
-        #region .
-        void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
-        {
-            if(HasItem == false) return;
-
-            _startingPoint = _iconRect.position;
-            _moveBegin = eventData.position;
-
-            _sbIndex = transform.GetSiblingIndex();
-            transform.SetAsLastSibling(); // 맨 위로 올려주기
-
-            _inventoryUI.BeginDrag(this);
-            IsDragging = true;
-        }
-
-        void IDragHandler.OnDrag(PointerEventData eventData)
-        {
-            if(!IsDragging) return;
-
-            Vector2 _moveOffset = eventData.position - _moveBegin;
-            _iconRect.position = _startingPoint + _moveOffset;
-        }
-
-        void IEndDragHandler.OnEndDrag(PointerEventData eventData)
-        {
-            if (!IsDragging) return;
-
-            _iconRect.position = _startingPoint;
-            transform.SetSiblingIndex(_sbIndex);
-
-            _inventoryUI.EndDrag();
-            IsDragging = false;
         }
 
         #endregion
@@ -132,6 +88,7 @@ namespace Rito.InventorySystem
         *                               Public Methods
         ***********************************************************************/
         #region .
+
         public void SetSlotIndex(int index) => Index = index;
 
         /// <summary> 다른 슬롯과 아이템 아이콘 교환 </summary>

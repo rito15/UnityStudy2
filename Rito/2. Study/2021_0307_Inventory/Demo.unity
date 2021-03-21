@@ -177,7 +177,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 0.392}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -257,7 +257,9 @@ MonoBehaviour:
   _slotSize: 64
   _contentAreaRT: {fileID: 310482291}
   _slotUiPrefab: {fileID: 382849820}
-  __showPreview: 0
+  _mouseReversed: 0
+  _showDebug: 1
+  __showPreview: 1
   __previewAlpha: 0.1
 --- !u!1 &195331107
 GameObject:

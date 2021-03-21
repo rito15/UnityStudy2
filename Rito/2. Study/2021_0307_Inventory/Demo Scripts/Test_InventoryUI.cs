@@ -19,7 +19,7 @@ public class Test_InventoryUI : MonoBehaviour
         {
             for (int i = 0; i < _itemIcons.Length; i++)
             {
-                _inventoryUI.Test_AddItemIcon(i, _itemIcons[i]);
+                _inventoryUI.TryAddItem(i, _itemIcons[i]);
             }
         }
     }

@@ -10,10 +10,6 @@ using UnityEngine.EventSystems;
 
    TODO
 
-   - 그래픽 레이캐스터 이용해서 드래그앤 드롭으로 놓았을 때, 놓은 지점 아이콘 2개 이용해서
-     서로의 이미지 바꾸기 (추후 : 아이템 정보도 교환)
-
-   - 놓았을 때 놓은 지점에 아이콘이 1개라면 허공에 놓았다고 간주하여 버리도록
 
 */
 
@@ -25,7 +21,7 @@ namespace Rito.InventorySystem
     public class InventoryUI : MonoBehaviour
     {
         /***********************************************************************
-        *                               Public Fields
+        *                               Option Fields
         ***********************************************************************/
         #region .
         [Range(0, 10)]
@@ -37,14 +33,21 @@ namespace Rito.InventorySystem
         [Range(32, 64)]
         [SerializeField] private float _slotSize = 64f;      // 각 슬롯의 크기
 
+        [Space]
+        [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
+        [SerializeField] private GameObject _slotUiPrefab;
+
+        [Space]
+        [SerializeField] private bool _mouseReversed = false; // 마우스 클릭 반전 여부
+
         #endregion
         /***********************************************************************
         *                               Private Fields
         ***********************************************************************/
         #region .
-        [Space]
-        [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
-        [SerializeField] private GameObject _slotUiPrefab;
+
+        /// <summary> 연결된 인벤토리 </summary>
+        private Inventory _inventory;
 
         private List<ItemSlotUI> _slotUIList = new List<ItemSlotUI>();
         private GraphicRaycaster _gr;
@@ -52,8 +55,14 @@ namespace Rito.InventorySystem
         private List<RaycastResult> _rrList;
 
         private ItemSlotUI _beginDragSlot; // 현재 드래그를 시작한 슬롯
-        private ItemSlotUI _endDragSlot; // 현재 드래그 마치는 지점의 슬롯
+        private Transform _beginDragIconTransform; // 해당 슬롯의 아이콘 트랜스폼
 
+        private int _leftClick = 0;
+        private int _rightClick = 1;
+
+        private Vector3 _beginDragIconPoint;   // 드래그 시작 시 슬롯의 위치
+        private Vector3 _beginDragCursorPoint; // 드래그 시작 시 커서의 위치
+        private int _beginDragSlotSiblingIndex;
 
         #endregion
         /***********************************************************************
@@ -64,6 +73,13 @@ namespace Rito.InventorySystem
         {
             Init();
             InitSlots();
+        }
+
+        private void Update()
+        {
+            OnPointerDown();
+            OnDrag();
+            OnPointerUp();
         }
 
         #endregion
@@ -136,50 +152,179 @@ namespace Rito.InventorySystem
             return rt;
         }
 
+        private bool IsOverUI()
+            => EventSystem.current.IsPointerOverGameObject();
+
+        #endregion
+        /***********************************************************************
+        *                               Mouse Event Methods
+        ***********************************************************************/
+        #region .
+        /// <summary> 레이캐스트하여 얻은 첫 번째 UI에서 컴포넌트 찾아 리턴 </summary>
+        private T RaycastAndGetFirstComponent<T>() where T : Component
+        {
+            _ped.position = Input.mousePosition;
+            _rrList.Clear();
+
+            _gr.Raycast(_ped, _rrList);
+            
+            if(_rrList.Count == 0)
+                return null;
+
+            T component = _rrList[0].gameObject.GetComponent<T>();
+            return (component != null) ? component : null;
+        }
+        private void OnPointerDown()
+        {
+            // Left Click : Begin Drag
+            if (Input.GetMouseButtonDown(_leftClick))
+            {
+                _beginDragSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
+
+                // 아이템을 갖고 있는 슬롯만 해당
+                if (_beginDragSlot != null && _beginDragSlot.HasItem)
+                {
+                    EditorLog($"Drag Begin : Slot [{_beginDragSlot.Index}]");
+
+                    // 위치 기억, 참조 등록
+                    _beginDragIconTransform = _beginDragSlot.IconRect.transform;
+                    _beginDragIconPoint = _beginDragIconTransform.position;
+                    _beginDragCursorPoint = Input.mousePosition;
+
+                    // 맨 위에 보이기
+                    _beginDragSlotSiblingIndex = _beginDragSlot.transform.GetSiblingIndex();
+                    _beginDragSlot.transform.SetAsLastSibling();
+                }
+                else
+                {
+                    _beginDragSlot = null;
+                }
+            }
+
+            // Right Click : Use Item
+            else if (Input.GetMouseButtonDown(_rightClick))
+            {
+                ItemSlotUI slot = RaycastAndGetFirstComponent<ItemSlotUI>();
+
+                if (slot != null && slot.HasItem)
+                {
+                    //
+                }
+            }
+        }
+        private void OnDrag()
+        {
+            if(_beginDragSlot == null) return;
+
+            if (Input.GetMouseButton(_leftClick))
+            {
+                // 위치 이동
+                _beginDragIconTransform.position =
+                    _beginDragIconPoint + (Input.mousePosition - _beginDragCursorPoint);
+            }
+        }
+        private void OnPointerUp()
+        {
+            if (Input.GetMouseButtonUp(_leftClick))
+            {
+                if (_beginDragSlot != null)
+                {
+                    // 위치 복원
+                    _beginDragIconTransform.position = _beginDragIconPoint;
+
+                    // UI 순서 복원
+                    _beginDragSlot.transform.SetSiblingIndex(_beginDragSlotSiblingIndex);
+
+                    // 드래그 완료 처리
+                    EndDrag();
+
+                    // 참조 제거
+                    _beginDragSlot = null;
+                    _beginDragIconTransform = null;
+                }
+            }
+        }
+
+        private void EndDrag()
+        {
+            bool isHandled = false;
+
+            ItemSlotUI endDragSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
+
+            // 아이템 슬롯끼리 아이콘 교환 또는 전이
+            if (endDragSlot != null)
+            {
+                EditorLog($"Drag End({(endDragSlot.HasItem ? "Exchange" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
+
+                _beginDragSlot.ExchangeOrMoveIcon(endDragSlot);
+                isHandled = true;
+            }
+
+            // 버리기(UI 바깥에만)
+            if (!isHandled && !IsOverUI())
+            {
+                EditorLog($"Drag End(Remove) : Slot [{_beginDragSlot.Index}]");
+
+                TryRemoveItem(_beginDragSlot.Index);
+            }
+        }
+
         #endregion
         /***********************************************************************
         *                               Public Methods
         ***********************************************************************/
         #region .
 
-        public void BeginDrag(ItemSlotUI beginDragSlot)
+        /// <summary> 마우스 클릭 좌우 반전시키기 (true : 반전) </summary>
+        public void InvertMouse(bool value)
         {
-            _beginDragSlot = beginDragSlot;
+            _leftClick = value ? 1 : 0;
+            _rightClick = value ? 0 : 1;
+
+            _mouseReversed = value;
         }
 
-        public void EndDrag()
+        public void TryAddItem(int index, Sprite icon)
         {
-            bool isHandled = false;
-            _ped.position = Input.mousePosition;
-            _rrList.Clear();
+            EditorLog($"Add Item : Slot [{index}]");
 
-            _gr.Raycast(_ped, _rrList);
-            int resultCount = _rrList.Count;
+            // Inventory.Add()
 
-            // 아이템 슬롯끼리 아이콘 교환 또는 전이
-            if (resultCount > 0)
-            {
-                ItemSlotUI endDragSlot = _rrList[0].gameObject.GetComponent<ItemSlotUI>();
-
-                if (endDragSlot != null)
-                {
-                    _beginDragSlot.ExchangeOrMoveIcon(endDragSlot);
-                    isHandled = true;
-                }
-            }
-
-            // 4. 기타 : 버릴까요?
-            if (!isHandled)
-            {
-
-            }
-
-            _beginDragSlot = null;
-        }
-
-        public void Test_AddItemIcon(int index, Sprite icon)
-        {
             _slotUIList[index].SetItem(icon);
+        }
+        
+        public void TryRemoveItem(int index)
+        {
+            EditorLog($"Remove Item : Slot [{index}]");
+
+            // Inventory.Remove()
+
+            _slotUIList[index].RemoveItem();
+        }
+
+        public void TryUseItem(int index)
+        {
+            EditorLog($"Use Item : Slot [{index}]");
+
+            // Inventory.Use()
+
+            _slotUIList[index].RemoveItem();
+        }
+
+        #endregion
+        /***********************************************************************
+        *                               Editor Only Debug
+        ***********************************************************************/
+        #region .
+#if UNITY_EDITOR
+        [Space]
+        [SerializeField] private bool _showDebug = true;
+#endif
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        private void EditorLog(object message)
+        {
+            if (!_showDebug) return;
+            UnityEngine.Debug.Log($"[InventoryUI] {message}");
         }
 
         #endregion
@@ -202,10 +347,17 @@ namespace Rito.InventorySystem
         private float __prevContentPadding;
         private float __prevAlpha;
         private bool __prevShow = false;
+        private bool __prevMouseReversed = false;
 
         private void OnValidate()
         {
             if(Application.isPlaying) return;
+
+            if (__prevMouseReversed != _mouseReversed)
+            {
+                __prevMouseReversed = _mouseReversed;
+                InvertMouse(_mouseReversed);
+            }
 
             if (__showPreview && !__prevShow)
             {

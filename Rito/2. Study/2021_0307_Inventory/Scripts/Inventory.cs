@@ -7,12 +7,31 @@ using UnityEngine;
 
     [TODO]
 
+    - ItemSO의 상속구조 구현
+      (ItemData는 해당 아이템이 공통으로 가질 데이터 필드 모음)
+      (개체마다 달라져야 하는 현재 내구도, 강화도 등은 Item 클래스에서)
+
+      - ItemData
+        - EquipmentItemData : 최대 내구도
+            WeaponItemData : 기본 공격력
+            ArmorItemData : 기본 방어력
+        - PortionItemData : 효과량(EffectAmount : 회복량, 공격력 등에 사용)
+
+    - Item의 상속구조 구현
+        - Item
+            - CountableItem
+                - PortionItem : Use() -> 사용
+            - EquipmentItem : Use() -> 착용
+                - WeaponItem
+                - ArmorItem
+
     - ADD 구현
 
     - 현재 존재하는 타입들의 아이템 데이터 모두 구현
 
     - 아이템 습득, 버리기, 사용, 정렬 등등 구현
 
+    - 인벤토리 아이템 아이콘에 마우스 올리면 뜨는 툴팁 구현
 
 */
 
@@ -81,12 +100,32 @@ namespace Rito.InventorySystem
             return index > 0 && index < Capacity;
         }
 
-        /// <summary> 앞에서부터 비어있는 슬롯 인덱스 확인 </summary>
-        private int GetEmptySlotIndex()
+        /// <summary> 앞에서부터 비어있는 슬롯 인덱스 탐색 </summary>
+        private int FindEmptySlotIndex()
         {
             for(int i = 0; i < Capacity; i++)
                 if(_itemArray[i] == null)
                     return i;
+            return -1;
+        }
+
+        /// <summary> 앞에서부터 개수 여유가 있는 Countable 아이템의 슬롯 인덱스 탐색 </summary>
+        private int FindCountableItemSlotIndex(CountableItem target)
+        {
+            for (int i = 0; i < Capacity; i++)
+            {
+                var current = _itemArray[i];
+                if(current == null)
+                    continue;
+
+                // 아이템 종류 일치, 개수 여유 확인
+                if (current.Data == target.Data && current is CountableItem ci)
+                {
+                    if(!ci.IsMax)
+                        return i;
+                }
+            }
+
             return -1;
         }
 
@@ -106,7 +145,7 @@ namespace Rito.InventorySystem
         /// </summary>
         public bool Add(ItemData itemData)
         {
-            int currentIndex = GetEmptySlotIndex(); // 비어있는 슬롯 인덱스
+            int currentIndex = FindEmptySlotIndex(); // 비어있는 슬롯 인덱스
             bool isCountable = itemData.Type != ItemType.Equipment;
 
 

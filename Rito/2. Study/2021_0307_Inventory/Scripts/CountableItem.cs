@@ -24,6 +24,8 @@ namespace Rito.InventorySystem
         /// <summary> 하나의 슬롯이 가질 수 있는 최대 개수(기본 99) </summary>
         public int MaxAmount => _maxAmount;
 
+        public bool IsMax => _amount >= _maxAmount;
+
         private int _amount;
         private int _maxAmount;
 

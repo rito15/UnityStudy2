@@ -255,7 +255,9 @@ namespace Rito.InventorySystem
             // 아이템 슬롯끼리 아이콘 교환 또는 이동
             if (endDragSlot != null)
             {
-                EditorLog($"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
+                EditorLog((_beginDragSlot == endDragSlot) ?
+                    $"Drag End(Same Slot) : [{_beginDragSlot.Index}]" : 
+                    $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
 
                 _beginDragSlot.SwapOrMoveIcon(endDragSlot);
                 return;

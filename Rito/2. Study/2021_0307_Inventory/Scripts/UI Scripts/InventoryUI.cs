@@ -15,6 +15,12 @@ using UnityEngine.EventSystems;
     - 개수 수정
 */
 
+/*
+    TODO
+
+    - Point over => 슬롯 포커스해주기? (레이캐스트 타겟 아닌 투명 마스크 페이드인/아웃)
+*/
+
 // 날짜 : 2021-03-07 PM 7:34:31
 // 작성자 : Rito
 
@@ -56,6 +62,7 @@ namespace Rito.InventorySystem
         private PointerEventData _ped;
         private List<RaycastResult> _rrList;
 
+        private ItemSlotUI _pointerOverSlot; // 현재 포인터가 위치한 곳의 슬롯
         private ItemSlotUI _beginDragSlot; // 현재 드래그를 시작한 슬롯
         private Transform _beginDragIconTransform; // 해당 슬롯의 아이콘 트랜스폼
 
@@ -79,8 +86,11 @@ namespace Rito.InventorySystem
 
         private void Update()
         {
+            _ped.position = Input.mousePosition;
+
+            OnPointerEnterAndExit();
             OnPointerDown();
-            OnDrag();
+            OnPointerDrag();
             OnPointerUp();
         }
 
@@ -166,7 +176,6 @@ namespace Rito.InventorySystem
         /// <summary> 레이캐스트하여 얻은 첫 번째 UI에서 컴포넌트 찾아 리턴 </summary>
         private T RaycastAndGetFirstComponent<T>() where T : Component
         {
-            _ped.position = Input.mousePosition;
             _rrList.Clear();
 
             _gr.Raycast(_ped, _rrList);
@@ -177,6 +186,36 @@ namespace Rito.InventorySystem
             T component = _rrList[0].gameObject.GetComponent<T>();
             return (component != null) ? component : null;
         }
+        /// <summary> 슬롯에 포인터가 올라가는 경우, 슬롯에서 포인터가 빠져나가는 경우 </summary>
+        private void OnPointerEnterAndExit()
+        {
+            var prevSlot = _pointerOverSlot; // 이전 프레임의 슬롯
+            _pointerOverSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
+
+            // Enter
+            if (prevSlot == null || !prevSlot.HasItem)
+            {
+                if (_pointerOverSlot != null && _pointerOverSlot.HasItem)
+                {
+                    EditorLog($"Mouse Over : Slot [{_pointerOverSlot.Index}]");
+                }
+            }
+            else
+            {
+                // Exit
+                if (_pointerOverSlot == null || !_pointerOverSlot.HasItem)
+                {
+                    EditorLog($"Mouse Exit");
+                }
+
+                // Change
+                else if (prevSlot != _pointerOverSlot && _pointerOverSlot.HasItem)
+                {
+                    EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{_pointerOverSlot.Index}]");
+                }
+            }
+        }
+        /// <summary> 슬롯에 클릭하는 경우 </summary>
         private void OnPointerDown()
         {
             // Left Click : Begin Drag
@@ -215,7 +254,7 @@ namespace Rito.InventorySystem
                 }
             }
         }
-        private void OnDrag()
+        private void OnPointerDrag()
         {
             if(_beginDragSlot == null) return;
 
@@ -230,6 +269,7 @@ namespace Rito.InventorySystem
         {
             if (Input.GetMouseButtonUp(_leftClick))
             {
+                // End Drag
                 if (_beginDragSlot != null)
                 {
                     // 위치 복원

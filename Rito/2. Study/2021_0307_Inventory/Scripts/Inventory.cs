@@ -11,11 +11,12 @@ using UnityEngine;
       (ItemData는 해당 아이템이 공통으로 가질 데이터 필드 모음)
       (개체마다 달라져야 하는 현재 내구도, 강화도 등은 Item 클래스에서)
 
-      - ItemData
-        - EquipmentItemData : 최대 내구도
-            WeaponItemData : 기본 공격력
-            ArmorItemData : 기본 방어력
-        - PortionItemData : 효과량(EffectAmount : 회복량, 공격력 등에 사용)
+        - ItemData
+            - CountableItemData
+                - PortionItemData : 효과량(EffectAmount : 회복량, 공격력 등에 사용)
+            - EquipmentItemData : 최대 내구도
+                - WeaponItemData : 기본 공격력
+                - ArmorItemData : 기본 방어력
 
     - Item의 상속구조 구현
         - Item
@@ -25,7 +26,8 @@ using UnityEngine;
                 - WeaponItem
                 - ArmorItem
 
-    - ADD 구현
+    - ADD 구현 [완료] ==> 테스트 필요 ★★★★★★★★★★★★★★★★★★★
+        == > 테스트를 위해서는 구체적인 아이템 SO 구현 및 추가 필요
 
     - 현재 존재하는 타입들의 아이템 데이터 모두 구현
 
@@ -101,25 +103,25 @@ namespace Rito.InventorySystem
         }
 
         /// <summary> 앞에서부터 비어있는 슬롯 인덱스 탐색 </summary>
-        private int FindEmptySlotIndex()
+        private int FindEmptySlotIndex(int startIndex = 0)
         {
-            for(int i = 0; i < Capacity; i++)
+            for(int i = startIndex; i < Capacity; i++)
                 if(_itemArray[i] == null)
                     return i;
             return -1;
         }
 
         /// <summary> 앞에서부터 개수 여유가 있는 Countable 아이템의 슬롯 인덱스 탐색 </summary>
-        private int FindCountableItemSlotIndex(CountableItem target)
+        private int FindCountableItemSlotIndex(CountableItemData target, int startIndex = 0)
         {
-            for (int i = 0; i < Capacity; i++)
+            for (int i = startIndex; i < Capacity; i++)
             {
                 var current = _itemArray[i];
                 if(current == null)
                     continue;
 
                 // 아이템 종류 일치, 개수 여유 확인
-                if (current.Data == target.Data && current is CountableItem ci)
+                if (current.Data == target && current is CountableItem ci)
                 {
                     if(!ci.IsMax)
                         return i;
@@ -141,39 +143,92 @@ namespace Rito.InventorySystem
         }
 
         /// <summary> 인벤토리에 아이템 추가
-        /// <para/> - 넣을 수 없는 경우, 추가하지 않고 false 리턴
+        /// <para/> 넣는 데 실패한 잉여 아이템 개수 리턴
+        /// <para/> 리턴이 0이면 넣는데 모두 성공했다는 의미
         /// </summary>
-        public bool Add(ItemData itemData)
+        public int Add(ItemData itemData, int amount = 1)
         {
-            int currentIndex = FindEmptySlotIndex(); // 비어있는 슬롯 인덱스
-            bool isCountable = itemData.Type != ItemType.Equipment;
+            int index;
 
-
-            // 수량이 없는 아이템
-            if (!isCountable)
+            // 1. 수량이 있는 아이템
+            if (itemData is CountableItemData ciData)
             {
-                // 인벤토리가 가득 찬 경우
-                if (currentIndex == -1)
+                bool findNextCountable = true;
+                index = -1;
+
+                while (amount > 0)
                 {
-                    return false;
-                }
-                // 넣을 수 있는 경우
-                else
-                {
-                    Item item = new Item(itemData);
-                    _itemArray[currentIndex] = item;
+                    // 1-1. 이미 해당 아이템이 인벤토리 내에 존재하고, 개수 여유 있는지 검사
+                    if (findNextCountable)
+                    {
+                        index = FindCountableItemSlotIndex(ciData, index + 1);
+
+                        // 개수 여유있는 기존재 슬롯이 더이상 없다고 판단될 경우, 빈 슬롯부터 탐색 시작
+                        if (index == -1)
+                        {
+                            findNextCountable = false;
+                            index = -1;
+                        }
+                        // 기존재 슬롯을 찾은 경우, 양 증가시키고 초과량 존재 시 amount에 초기화
+                        else
+                        {
+                            CountableItem ci = _itemArray[index] as CountableItem;
+                            amount = ci.AddAmountAndGetExcess(amount);
+                        }
+                    }
+                    // 1-2. 빈 슬롯 탐색
+                    else
+                    {
+                        index = FindEmptySlotIndex(index + 1);
+
+                        // 빈 슬롯조차 없는 경우 종료
+                        if (index == -1)
+                        {
+                            break;
+                        }
+                        // 빈 슬롯 발견 시, 슬롯에 아이템 추가 및 잉여량 계산
+                        else
+                        {
+                            _itemArray[index] = new CountableItem(ciData, amount);
+                            amount = (amount > ciData.MaxAmount) ? (amount - ciData.MaxAmount) : 0;
+                        }
+                    }
                 }
             }
-            // 수량이 있는 아이템
+            // 2. 수량이 없는 아이템
             else
             {
-                // 넣을 수 있는 경우, 없는 경우 판단하여 처리
+                // 2-1. 1개만 넣는 경우, 간단히 수행
+                if (amount == 1)
+                {
+                    index = FindEmptySlotIndex();
+                    if (index != -1)
+                    {
+                        // 아이템을 슬롯에 추가
+                        _itemArray[index] = new Item(itemData);
+                        amount = 0;
+                    }
+                }
 
-                // 수용량 초과여도 MaxAmount 도달하지 않았으면 습득 가능
-                // 대신 추가적인 처리 필요 (현재 80개인데 추가로 50개를 넣어서 maxAmount 31개 초과 등)
+                // 2-2. 2개 이상의 수량 없는 아이템을 동시에 추가하는 경우
+                index = -1;
+                for (; amount > 0; amount--)
+                {
+                    // 아이템 넣은 인덱스의 다음 인덱스부터 슬롯 탐색
+                    index = FindEmptySlotIndex(index + 1);
+
+                    // 다 넣지 못한 경우 루프 종료
+                    if (index == -1)
+                    {
+                        break;
+                    }
+
+                    // 아이템을 슬롯에 추가
+                    _itemArray[index] = new Item(itemData);
+                }
             }
 
-            return true;
+            return amount;
         }
 
         /// <summary> 인벤토리에서 아이템 제거

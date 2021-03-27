@@ -19,6 +19,22 @@ namespace Rito.InventorySystem
         [Tooltip("슬롯 내에서 아이콘과 슬롯 사이의 여백")]
         public float _padding = 1f;
 
+        [Tooltip("아이템 아이콘 이미지")]
+        [SerializeField] private Image _iconImage;
+
+        [Tooltip("아이템 개수 텍스트")]
+        [SerializeField] private Text _amountText;
+
+        [Tooltip("슬롯이 포커스될 때 나타나는 하이라이트 이미지")]
+        [SerializeField] private Image _highlightImage;
+
+        [Space]
+        [Tooltip("하이라이트 이미지 알파 값")]
+        [SerializeField] private float _highlightAlpha = 0.5f;
+
+        [Tooltip("하이라이트 소요 시간")]
+        [SerializeField] private float _highlightFadeDuration = 0.2f;
+
         #endregion
         /***********************************************************************
         *                               Properties
@@ -38,12 +54,15 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
         private InventoryUI _inventoryUI;
+
+        private RectTransform _iconRect;
+        private RectTransform _highlightRect;
+
         private GameObject _iconGo;
         private GameObject _textGo;
-        private RectTransform _iconRect;
+        private GameObject _highlightGo;
 
-        [SerializeField] private Image _iconImage; // 아이템 아이콘 : 직접 등록(자식)
-        [SerializeField] private Text _amountText; // 아이템 개수 텍스트
+        private float _currentHLAlpha = 0f;
 
         #endregion
         /***********************************************************************
@@ -65,13 +84,18 @@ namespace Rito.InventorySystem
         {
             _inventoryUI = GetComponentInParent<InventoryUI>();
 
+            // Rects
             _iconRect = _iconImage.rectTransform;
+            _highlightRect = _highlightImage.rectTransform;
+
+            // Game Objects
             _iconGo = _iconRect.gameObject;
             _textGo = _amountText.gameObject;
+            _highlightGo = _highlightImage.gameObject;
         }
         private void InitValues()
         {
-            // 1. Item Rect
+            // 1. Item Icon, Highlight Rect
             _iconRect.pivot = new Vector2(0.5f, 0.5f);
             _iconRect.anchorMin = Vector2.zero;
             _iconRect.anchorMax = Vector2.one;
@@ -80,11 +104,20 @@ namespace Rito.InventorySystem
             _iconRect.offsetMin = Vector2.one * (_padding);
             _iconRect.offsetMax = Vector2.one * (-_padding);
 
+            // 아이콘과 하이라이트 크기가 동일하도록
+            _highlightRect.pivot = _iconRect.pivot;
+            _highlightRect.anchorMin = _iconRect.anchorMin;
+            _highlightRect.anchorMax = _iconRect.anchorMax;
+            _highlightRect.offsetMin = _iconRect.offsetMin;
+            _highlightRect.offsetMax = _iconRect.offsetMax;
+
             // 2. Image
             _iconImage.raycastTarget = false;
+            _highlightImage.raycastTarget = false;
 
             // 3. Deactivate Icon
             HideIcon();
+            _highlightGo.SetActive(false);
         }
 
         private void ShowIcon() => _iconGo.SetActive(true);
@@ -151,6 +184,61 @@ namespace Rito.InventorySystem
                 HideText();
 
             _amountText.text = amount.ToString();
+        }
+
+        public void Highlight(bool value)
+        {
+            if (value)
+                StartCoroutine("HighlightFadeInRoutine");
+            else
+                StartCoroutine("HighlightFadeOutRoutine");
+        }
+
+        #endregion
+        /***********************************************************************
+        *                               Coroutines
+        ***********************************************************************/
+        #region .
+        /// <summary> 하이라이트 알파값 0f => 1f 서서히 증가 </summary>
+        private IEnumerator HighlightFadeInRoutine()
+        {
+            StopCoroutine("HighlightFadeOutRoutine");
+            _highlightGo.SetActive(true);
+
+            float unit = _highlightAlpha / _highlightFadeDuration;
+
+            for (; _currentHLAlpha <= _highlightAlpha; _currentHLAlpha += unit * Time.deltaTime)
+            {
+                _highlightImage.color = new Color(
+                    _highlightImage.color.r,
+                    _highlightImage.color.g,
+                    _highlightImage.color.b,
+                    _currentHLAlpha
+                );
+
+                yield return null;
+            }
+        }
+
+        private IEnumerator HighlightFadeOutRoutine()
+        {
+            StopCoroutine("HighlightFadeInRoutine");
+
+            float unit = _highlightAlpha / _highlightFadeDuration;
+
+            for (; _currentHLAlpha >= 0f; _currentHLAlpha -= unit * Time.deltaTime)
+            {
+                _highlightImage.color = new Color(
+                    _highlightImage.color.r,
+                    _highlightImage.color.g,
+                    _highlightImage.color.b,
+                    _currentHLAlpha
+                );
+
+                yield return null;
+            }
+
+            _highlightGo.SetActive(false);
         }
 
         #endregion

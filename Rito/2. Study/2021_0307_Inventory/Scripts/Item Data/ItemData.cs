@@ -9,8 +9,8 @@ using UnityEngine.UI;
 
 namespace Rito.InventorySystem
 {
-    [CreateAssetMenu(fileName = "Item_", menuName = "Rito/Scriptable Objects/Item Data", order = 1)]
-    public class ItemData : ScriptableObject
+    //[CreateAssetMenu(fileName = "Item_", menuName = "Rito/Scriptable Objects/Item Data", order = 1)]
+    public abstract class ItemData : ScriptableObject
     {
         public int ID => _id;
         public string Name => _name;

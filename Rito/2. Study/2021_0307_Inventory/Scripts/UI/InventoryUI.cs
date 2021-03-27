@@ -189,29 +189,56 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯에 포인터가 올라가는 경우, 슬롯에서 포인터가 빠져나가는 경우 </summary>
         private void OnPointerEnterAndExit()
         {
-            var prevSlot = _pointerOverSlot; // 이전 프레임의 슬롯
-            _pointerOverSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
+            // 이전 프레임의 슬롯
+            var prevSlot = _pointerOverSlot;
 
-            // Enter
-            if (prevSlot == null || !prevSlot.HasItem)
+            // 현재 프레임의 슬롯
+            var curSlot = _pointerOverSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
+
+            if (prevSlot == null)
             {
-                if (_pointerOverSlot != null && _pointerOverSlot.HasItem)
+                // Enter
+                if (curSlot != null)
                 {
-                    EditorLog($"Mouse Over : Slot [{_pointerOverSlot.Index}]");
+                    EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
+                    OnCurrentEnter();
                 }
             }
             else
             {
                 // Exit
-                if (_pointerOverSlot == null || !_pointerOverSlot.HasItem)
+                if (curSlot == null)
                 {
-                    EditorLog($"Mouse Exit");
+                    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
+                    OnPrevExit();
                 }
 
                 // Change
-                else if (prevSlot != _pointerOverSlot && _pointerOverSlot.HasItem)
+                else if (prevSlot != curSlot)
                 {
-                    EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{_pointerOverSlot.Index}]");
+                    EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{curSlot.Index}]");
+                    OnPrevExit();
+                    OnCurrentEnter();
+                }
+            }
+
+            void OnCurrentEnter()
+            {
+                curSlot.Highlight(true);
+
+                if (curSlot.HasItem)
+                {
+                    // 툴팁 보여주기
+                }
+            }
+
+            void OnPrevExit()
+            {
+                prevSlot.Highlight(false);
+
+                if (prevSlot.HasItem)
+                {
+                    // 툴팁 사라지기
                 }
             }
         }

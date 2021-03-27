@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 namespace Rito
 {
     /// <summary> 헤더 드래그 앤 드롭에 의한 UI 이동 </summary>
-    public class MovableUI : MonoBehaviour, IPointerDownHandler, IDragHandler
+    public class MovableHeaderUI : MonoBehaviour, IPointerDownHandler, IDragHandler
     {
         [SerializeField]
         private Transform _targetTr; // 이동될 UI

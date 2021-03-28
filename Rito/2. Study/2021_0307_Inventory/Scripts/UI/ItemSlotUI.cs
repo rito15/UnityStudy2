@@ -156,8 +156,15 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯에 아이템 등록 </summary>
         public void SetItem(Sprite itemSprite)
         {
-            _iconImage.sprite = itemSprite;
-            ShowIcon();
+            if (itemSprite != null)
+            {
+                _iconImage.sprite = itemSprite;
+                ShowIcon();
+            }
+            else
+            {
+                RemoveItem();
+            }
         }
 
         /// <summary> 슬롯에서 아이템 제거 </summary>
@@ -165,6 +172,7 @@ namespace Rito.InventorySystem
         {
             _iconImage.sprite = null;
             HideIcon();
+            HideText();
         }
 
         /// <summary> 이미지 투명도 설정 </summary>
@@ -175,7 +183,7 @@ namespace Rito.InventorySystem
             );
         }
 
-        /// <summary> 아이템 개수 텍스트 설정 </summary>
+        /// <summary> 아이템 개수 텍스트 설정(amount가 1 이하일 경우 텍스트 미표시) </summary>
         public void SetItemAmount(int amount)
         {
             if(HasItem && amount > 1)

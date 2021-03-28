@@ -250,7 +250,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: abade30e1fdba7f459af820965e49137, type: 2}
+  - {fileID: 2100000, guid: 5b25ba4facfc38a4cb836dddef473c0e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -306,6 +306,75 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1778418772
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1778418774}
+  - component: {fileID: 1778418773}
+  m_Layer: 0
+  m_Name: World
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1778418773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778418772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60977cb960fcefe419871082b3622d6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  material: {fileID: 2100000, guid: 5b25ba4facfc38a4cb836dddef473c0e, type: 2}
+  blockTypes:
+  - blockName: Grass
+    isSolid: 1
+    topFaceTextureID: 15
+    frontFaceTextureID: 43
+    backFaceTextureID: 43
+    leftFaceTextureID: 43
+    rightFaceTextureID: 43
+    bottomFaceTextureID: 52
+  - blockName: Ground
+    isSolid: 1
+    topFaceTextureID: 52
+    frontFaceTextureID: 52
+    backFaceTextureID: 52
+    leftFaceTextureID: 52
+    rightFaceTextureID: 52
+    bottomFaceTextureID: 52
+  - blockName: Stone
+    isSolid: 1
+    topFaceTextureID: 41
+    frontFaceTextureID: 68
+    backFaceTextureID: 68
+    leftFaceTextureID: 68
+    rightFaceTextureID: 68
+    bottomFaceTextureID: 68
+--- !u!4 &1778418774
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778418772}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2057593552
 GameObject:

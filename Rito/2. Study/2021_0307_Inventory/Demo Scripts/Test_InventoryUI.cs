@@ -9,17 +9,17 @@ using Rito.InventorySystem;
 
 public class Test_InventoryUI : MonoBehaviour
 {
-    public InventoryUI _inventoryUI;
+    public Inventory _inventory;
 
-    public Sprite[] _itemIcons;
+    public ItemData[] _itemDataArray;
 
     private void Start()
     {
-        if (_itemIcons?.Length > 0)
+        if (_itemDataArray?.Length > 0)
         {
-            for (int i = 0; i < _itemIcons.Length; i++)
+            for (int i = 0; i < _itemDataArray.Length; i++)
             {
-                _inventoryUI.SetItem(i, _itemIcons[i]);
+                _inventory.Add(_itemDataArray[i], 3);
             }
         }
     }

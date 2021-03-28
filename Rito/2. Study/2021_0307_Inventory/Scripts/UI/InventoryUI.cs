@@ -18,7 +18,7 @@ using UnityEngine.EventSystems;
 /*
     TODO
 
-    - Point over => 슬롯 포커스해주기? (레이캐스트 타겟 아닌 투명 마스크 페이드인/아웃)
+    - 
 */
 
 // 날짜 : 2021-03-07 PM 7:34:31
@@ -96,7 +96,7 @@ namespace Rito.InventorySystem
 
         #endregion
         /***********************************************************************
-        *                               Private Methods
+        *                               Init Methods
         ***********************************************************************/
         #region .
         private void Init()
@@ -200,7 +200,7 @@ namespace Rito.InventorySystem
                 // Enter
                 if (curSlot != null)
                 {
-                    EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
+                    //EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
                     OnCurrentEnter();
                 }
             }
@@ -209,14 +209,14 @@ namespace Rito.InventorySystem
                 // Exit
                 if (curSlot == null)
                 {
-                    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
+                    //EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
                     OnPrevExit();
                 }
 
                 // Change
                 else if (prevSlot != curSlot)
                 {
-                    EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{curSlot.Index}]");
+                    //EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{curSlot.Index}]");
                     OnPrevExit();
                     OnCurrentEnter();
                 }
@@ -228,7 +228,10 @@ namespace Rito.InventorySystem
 
                 if (curSlot.HasItem)
                 {
+                    EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
+
                     // 툴팁 보여주기
+
                 }
             }
 
@@ -238,6 +241,8 @@ namespace Rito.InventorySystem
 
                 if (prevSlot.HasItem)
                 {
+                    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
+
                     // 툴팁 사라지기
                 }
             }
@@ -346,6 +351,31 @@ namespace Rito.InventorySystem
 
         #endregion
         /***********************************************************************
+        *                               Private Methods
+        ***********************************************************************/
+        #region .
+
+        /// <summary> UI 및 인벤토리에서 아이템 제거 </summary>
+        private void TryRemoveItem(int index)
+        {
+            EditorLog($"UI - Remove Item : Slot [{index}]");
+
+            // Inventory.Remove()
+
+            _slotUIList[index].RemoveItem();
+        }
+
+        private void TryUseItem(int index)
+        {
+            EditorLog($"UI - Use Item : Slot [{index}]");
+
+            // Inventory.Use()
+
+            _slotUIList[index].RemoveItem();
+        }
+
+        #endregion
+        /***********************************************************************
         *                               Public Methods
         ***********************************************************************/
         #region .
@@ -359,7 +389,7 @@ namespace Rito.InventorySystem
             _mouseReversed = value;
         }
 
-        /// <summary> 슬롯에 아이템 아이콘 등록 : Inventory에서만 호출 </summary>
+        /// <summary> 슬롯에 아이템 아이콘 등록 </summary>
         public void SetItem(int index, Sprite icon)
         {
             EditorLog($"Set Item : Slot [{index}]");
@@ -372,25 +402,13 @@ namespace Rito.InventorySystem
         {
             EditorLog($"Set Item Amount : Slot [{index}], Amount [{amount}]");
 
+            // amount가 1 이하일 경우 텍스트 미표시
             _slotUIList[index].SetItemAmount(amount);
         }
 
-        /// <summary> UI 및 인벤토리에서 아이템 제거 </summary>
-        public void TryRemoveItem(int index)
+        /// <summary> 슬롯에서 아이템 아이콘 제거, 개수 텍스트 숨기기 </summary>
+        public void RemoveItem(int index)
         {
-            EditorLog($"Remove Item : Slot [{index}]");
-
-            // Inventory.Remove()
-
-            _slotUIList[index].RemoveItem();
-        }
-
-        public void TryUseItem(int index)
-        {
-            EditorLog($"Use Item : Slot [{index}]");
-
-            // Inventory.Use()
-
             _slotUIList[index].RemoveItem();
         }
 

@@ -14,14 +14,13 @@ namespace Rito.InventorySystem
         public CountableItemData CountableData { get; private set; }
 
         /// <summary> 현재 아이템 개수 </summary>
-        public int Amount => _amount;
-        private int _amount;
+        public int Amount { get; private set; }
 
         /// <summary> 하나의 슬롯이 가질 수 있는 최대 개수(기본 99) </summary>
         public int MaxAmount => CountableData.MaxAmount;
 
         /// <summary> 수량이 가득 찼는지 여부 </summary>
-        public bool IsMax => _amount >= CountableData.MaxAmount;
+        public bool IsMax => Amount >= CountableData.MaxAmount;
 
 
         public CountableItem(CountableItemData data, int amount = 1) : base(data)
@@ -33,13 +32,13 @@ namespace Rito.InventorySystem
         /// <summary> 개수 지정(범위 제한) </summary>
         public void SetAmount(int amount)
         {
-            _amount = Mathf.Clamp(amount, 1, MaxAmount);
+            Amount = Mathf.Clamp(amount, 1, MaxAmount);
         }
 
         /// <summary> 개수 추가 및 최대치 초과량 반환(초과량 없을 경우 0) </summary>
         public int AddAmountAndGetExcess(int amount)
         {
-            int nextAmount = _amount + amount;
+            int nextAmount = Amount + amount;
             SetAmount(nextAmount);
 
             return (nextAmount > MaxAmount) ? (nextAmount - MaxAmount) : 0;

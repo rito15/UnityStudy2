@@ -485,7 +485,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 2047372642}
-  - {fileID: 1905169670}
   - {fileID: 1970834961}
   m_Father: {fileID: 310482291}
   m_RootOrder: 0
@@ -642,6 +641,52 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &1219388072
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1219388074}
+  - component: {fileID: 1219388073}
+  m_Layer: 0
+  m_Name: Inventory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1219388073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219388072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd347083a75615f448ffa248fb2c97d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _initalCapacity: 32
+  _maxCapacity: 64
+  _inventoryUI: {fileID: 119270379}
+--- !u!4 &1219388074
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219388072}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.1323242, y: 3.1708984, z: 1.7446289}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1556221587
 GameObject:
   m_ObjectHideFlags: 0
@@ -1004,16 +1049,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1905169669}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 382849821}
-  m_RootOrder: 1
+  m_Father: {fileID: 2047372642}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -4, y: -4}
+  m_AnchoredPosition: {x: -3, y: -3}
   m_SizeDelta: {x: 16, y: 16}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1905169671
@@ -1029,7 +1074,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -1124,7 +1169,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 382849821}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -1159,7 +1204,8 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 1905169670}
   m_Father: {fileID: 382849821}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1234,18 +1280,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7367a7830ed812249a4b205472fa9313, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _inventoryUI: {fileID: 119270379}
-  _itemIcons:
-  - {fileID: 21300000, guid: 00043c5378df0b8429c86fc448149538, type: 3}
-  - {fileID: 21300000, guid: 58c8813c0baf8df41aefd44e15be16c4, type: 3}
-  - {fileID: 21300000, guid: b28431a32956a32408d55628950ee7b1, type: 3}
-  - {fileID: 21300000, guid: 41881c5790d65f445b3bbcc9fd3f0c4e, type: 3}
-  - {fileID: 21300000, guid: bd26f74ef29eb2d4293d69a42831b590, type: 3}
-  - {fileID: 21300000, guid: 604509cfdd9a4d34892a27645f5aa304, type: 3}
-  - {fileID: 21300000, guid: a398b32e25009414d97c57583b758dd0, type: 3}
-  - {fileID: 21300000, guid: 7e838e588cfa3a54abe8ea22f5458286, type: 3}
-  - {fileID: 21300000, guid: d61276d76b2ee8643911990f5318f914, type: 3}
-  - {fileID: 21300000, guid: 59a80e411730cdf419e6e1336ba49acd, type: 3}
+  _inventory: {fileID: 1219388073}
+  _itemDataArray:
+  - {fileID: 11400000, guid: 8f19a473f3e8c5c408faaffb1802abea, type: 2}
+  - {fileID: 11400000, guid: e7e18c97d59896341a1a487bee626a6d, type: 2}
+  - {fileID: 11400000, guid: c76044d8a642b6341882e805becf92df, type: 2}
+  - {fileID: 11400000, guid: 04eef8332317ca946adaf6a2a23b00ca, type: 2}
+  - {fileID: 11400000, guid: e44506062b1a62e4f9afc1bf9cf480fd, type: 2}
+  - {fileID: 11400000, guid: e73a0198a0431f04a8ff190aae00be09, type: 2}
 --- !u!4 &2115419865
 Transform:
   m_ObjectHideFlags: 0
@@ -1258,5 +1300,5 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

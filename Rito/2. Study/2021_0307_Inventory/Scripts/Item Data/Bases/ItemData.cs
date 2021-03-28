@@ -9,17 +9,14 @@ using UnityEngine.UI;
 
 namespace Rito.InventorySystem
 {
-    //[CreateAssetMenu(fileName = "Item_", menuName = "Rito/Scriptable Objects/Item Data", order = 1)]
     public abstract class ItemData : ScriptableObject
     {
         public int ID => _id;
         public string Name => _name;
-        public ItemType Type => _type;
         public Sprite IconSprite => _iconSprite;
 
         [SerializeField] private int      _id;
         [SerializeField] private string   _name;
-        [SerializeField] private ItemType _type;
         [SerializeField] private Sprite   _iconSprite;
         [SerializeField] private GameObject _dropItemPrefab;
     }

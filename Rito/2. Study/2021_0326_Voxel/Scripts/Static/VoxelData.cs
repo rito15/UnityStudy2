@@ -10,8 +10,36 @@ namespace Rito.VoxelSystem
 {
     public static class VoxelData
     {
+        /***********************************************************************
+        *                               Const Fields
+        ***********************************************************************/
+        #region .
+        public const int BackFace   = 0;
+        public const int FrontFace  = 1;
+        public const int TopFace    = 2;
+        public const int BottomFace = 3;
+        public const int LeftFace   = 4;
+        public const int RightFace  = 5;
+
+        #endregion
+        /***********************************************************************
+        *                               Static Fields
+        ***********************************************************************/
+        #region .
         public static readonly int ChunkWidth = 5;
         public static readonly int ChunkHeight = 5;
+
+        // 텍스쳐 아틀라스의 가로, 세로 텍스쳐 개수
+        public static readonly int TextureAtlasWidth = 9;
+        public static readonly int TextureAtlasHeight = 10;
+
+        // 텍스쳐 아틀라스 내에서 각 행, 열마다 텍스쳐가 갖는 크기 비율
+        public static float NormalizedTextureAtlasWidth
+            => 1f / TextureAtlasWidth;
+        public static float NormalizedTextureAtlasHeight
+            => 1f / TextureAtlasHeight;
+
+        #endregion
 
         /***********************************************************************
         *                               Lookup Tables

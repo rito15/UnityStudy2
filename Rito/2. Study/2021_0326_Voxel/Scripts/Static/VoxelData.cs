@@ -26,18 +26,26 @@ namespace Rito.VoxelSystem
         *                               Static Fields
         ***********************************************************************/
         #region .
-        public static readonly int ChunkWidth = 5;
-        public static readonly int ChunkHeight = 5;
+        public static readonly int ChunkWidth = 5;  // 청크 내의 X, Z 성분 복셀 개수
+        public static readonly int ChunkHeight = 15; // 청크 내의 Y 성분 복셀 개수
+
+        /// <summary> 월드의 X, Z 성분 청크 개수 </summary>
+        public static readonly int WorldSizeInChunks = 100;
+
+        /// <summary> 월드의 X, Z 성분 복셀(큐브) 개수 </summary>
+        public static int WorldSizeInVoxels => WorldSizeInChunks * ChunkWidth;
+
+        /// <summary> 시야 범위(단위 : 청크 개수) </summary>
+        public static readonly int ViewDistanceInChunks = 5;
+
 
         // 텍스쳐 아틀라스의 가로, 세로 텍스쳐 개수
         public static readonly int TextureAtlasWidth = 9;
         public static readonly int TextureAtlasHeight = 10;
 
         // 텍스쳐 아틀라스 내에서 각 행, 열마다 텍스쳐가 갖는 크기 비율
-        public static float NormalizedTextureAtlasWidth
-            => 1f / TextureAtlasWidth;
-        public static float NormalizedTextureAtlasHeight
-            => 1f / TextureAtlasHeight;
+        public static float NormalizedTextureAtlasWidth => 1f / TextureAtlasWidth;
+        public static float NormalizedTextureAtlasHeight => 1f / TextureAtlasHeight;
 
         #endregion
 

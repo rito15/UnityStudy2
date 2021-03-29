@@ -8,15 +8,40 @@ using UnityEngine;
 
 namespace Rito.VoxelSystem
 {
-    /// <summary> 메시 청크 컴포넌트 </summary>
-    public class Chunk : MonoBehaviour
+    public class Chunk
     {
         /***********************************************************************
         *                               Public Fields
         ***********************************************************************/
         #region .
-        public MeshRenderer meshRenderer;
-        public MeshFilter meshFilter;
+        public ChunkCoord coord;
+
+        #endregion
+        /***********************************************************************
+        *                               Public Properties
+        ***********************************************************************/
+        #region .
+        public bool IsActive
+        {
+            get => chunkObject.activeSelf;
+            set => chunkObject.SetActive(value);
+        }
+
+        /// <summary> 청크의 월드 위치 </summary>
+        public Vector3 WorldPos
+        {
+            get => chunkTransform.position;
+        }
+
+        #endregion
+        /***********************************************************************
+        *                               Component Fields
+        ***********************************************************************/
+        #region .
+        public GameObject chunkObject;
+        private Transform chunkTransform;
+        private MeshRenderer meshRenderer;
+        private MeshFilter meshFilter;
 
         #endregion
         /***********************************************************************
@@ -34,12 +59,25 @@ namespace Rito.VoxelSystem
 
         #endregion
         /***********************************************************************
-        *                               Unity Events
+        *                               Constructor
         ***********************************************************************/
         #region .
-        private void Start()
+
+        public Chunk(ChunkCoord coord, World world)
         {
-            Init();
+            this.coord = coord;
+            this.world = world;
+
+            chunkObject = new GameObject();
+            chunkTransform = chunkObject.transform;
+            meshRenderer = chunkObject.AddComponent<MeshRenderer>();
+            meshFilter = chunkObject.AddComponent<MeshFilter>();
+
+            meshRenderer.material = world.material;
+            chunkTransform.SetParent(world.transform);
+            chunkTransform.position = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
+            chunkObject.name = $"Chunk [{coord.x}, {coord.z}]";
+
             PopulateVoxelMap();
             CreateMeshData();
             CreateMesh();
@@ -47,13 +85,46 @@ namespace Rito.VoxelSystem
 
         #endregion
         /***********************************************************************
+        *                               Getter & Checker Methods
+        ***********************************************************************/
+        #region .
+
+        /// <summary> voxelMap으로부터 특정 위치에 해당하는 블록 ID 가져오기 </summary>
+        private byte GetBlockID(in Vector3 pos)
+        {
+            return voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
+        }
+
+        /// <summary> 상대좌표가 Solid인지 여부 검사(해당 좌표에 복셀 큐브가 존재하는지 여부) </summary>
+        private bool IsSolid(in Vector3 pos)
+        {
+            return world.IsBlockSolid(pos + WorldPos);
+
+            //int x = Mathf.FloorToInt(pos.x);
+            //int y = Mathf.FloorToInt(pos.y);
+            //int z = Mathf.FloorToInt(pos.z);
+
+            //// 청크 범위를 벗어나는 경우
+            //if (!IsBlockInChunk(x, y, z))
+            //    return world.blockTypes[world.GetBlockType(pos + WorldPos)].isSolid;
+
+            //return world.blockTypes[voxelMap[x, y, z]].isSolid;
+        }
+
+        /// <summary> 상대좌표 (x, y, z)가 청크 범위 내에 포함되는지 검사 </summary>
+        private bool IsBlockInChunk(int x, int y, int z)
+        {
+            return 
+                x >= 0 && x < VoxelData.ChunkWidth &&
+                z >= 0 && z < VoxelData.ChunkWidth &&
+                y >= 0 && y < VoxelData.ChunkHeight;
+        }
+
+        #endregion
+        /***********************************************************************
         *                               Private Methods
         ***********************************************************************/
         #region .
-        private void Init()
-        {
-            world = FindObjectOfType<World>();
-        }
 
         /// <summary> 복셀 맵의 Solid 정보 데이터 생성 </summary>
         private void PopulateVoxelMap()
@@ -64,7 +135,7 @@ namespace Rito.VoxelSystem
                 {
                     for (int z = 0; z < VoxelData.ChunkWidth; z++)
                     {
-                        voxelMap[x, y, z] = (byte)(y >= VoxelData.ChunkHeight - 1 ? 0 : 1);
+                        voxelMap[x, y, z] = world.GetBlockType(new Vector3(x, y, z) + WorldPos);
                     }
                 }
             }
@@ -85,28 +156,6 @@ namespace Rito.VoxelSystem
             }
         }
 
-        /// <summary> voxelMap으로부터 특정 위치에 해당하는 블록 ID 가져오기 </summary>
-        private byte GetBlockID(in Vector3 pos)
-        {
-            return voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
-        }
-
-        /// <summary> 해당 좌표가 Solid인지 여부 검사(해당 좌표에 복셀 큐브가 존재하는지 여부) </summary>
-        private bool CheckVoxel(in Vector3 pos)
-        {
-            int x = Mathf.FloorToInt(pos.x);
-            int y = Mathf.FloorToInt(pos.y);
-            int z = Mathf.FloorToInt(pos.z);
-
-            // 맵 범위를 벗어나는 경우
-            if(x < 0 || x > VoxelData.ChunkWidth - 1 || 
-               y < 0 || y > VoxelData.ChunkHeight - 1 || 
-               z < 0 || z > VoxelData.ChunkWidth - 1)
-                return false;
-
-            return world.blockTypes[voxelMap[x, y, z]].isSolid;
-        }
-
         /// <summary> 해당 좌표에서 복셀 큐브의 메시 데이터 추가 </summary>
         private void AddVoxelDataToChunk(in Vector3 pos)
         {
@@ -119,7 +168,7 @@ namespace Rito.VoxelSystem
                 // => 청크의 외곽 부분만 면이 그려지고, 내부에는 면이 그려지지 않도록
 
                 // 각 면(삼각형 2개) 그리기
-                if (CheckVoxel(pos) && !CheckVoxel(pos + VoxelData.faceChecks[face]))
+                if (IsSolid(pos) && !IsSolid(pos + VoxelData.faceChecks[face]))
                 {
                     byte blockID = GetBlockID(pos);
 

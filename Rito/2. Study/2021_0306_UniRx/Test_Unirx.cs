@@ -48,6 +48,7 @@ public class Test_Unirx : MonoBehaviour
         //CaptureWhenValueChanges();
         //RefineRapidlyChangingValue();
 
+        SubjectTest();
     }
 
     private void UpdateDifferences()
@@ -323,5 +324,27 @@ public class Test_Unirx : MonoBehaviour
             .DistinctUntilChanged()
             .ThrottleFrame(5)
             .Subscribe(x => _isGroundedRefined = x);
+    }
+
+    private void SubjectTest()
+    {
+        Subject<string> strSubject = new Subject<string>();
+
+        var disposable = 
+            strSubject
+            .Subscribe(str => Debug.Log("Next : " + str), () => Debug.Log("End1"));
+
+        strSubject
+            .DelayFrame(10)
+            .Subscribe(str => Debug.Log("Delayed Next : " + str), () => Debug.Log("End2"));
+
+        strSubject.OnNext("A");
+
+        disposable.Dispose();
+
+        strSubject.OnNext("B");
+        strSubject.OnCompleted();
+
+        strSubject.OnNext("C");
     }
 }

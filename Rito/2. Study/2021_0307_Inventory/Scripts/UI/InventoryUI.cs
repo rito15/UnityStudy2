@@ -164,15 +164,14 @@ namespace Rito.InventorySystem
             }
         }
 
-
-        private bool IsOverUI()
-            => EventSystem.current.IsPointerOverGameObject();
-
         #endregion
         /***********************************************************************
         *                               Mouse Event Methods
         ***********************************************************************/
         #region .
+        private bool IsOverUI()
+            => EventSystem.current.IsPointerOverGameObject();
+
         /// <summary> 레이캐스트하여 얻은 첫 번째 UI에서 컴포넌트 찾아 리턴 </summary>
         private T RaycastAndGetFirstComponent<T>() where T : Component
         {
@@ -331,7 +330,7 @@ namespace Rito.InventorySystem
                     $"Drag End(Same Slot) : [{_beginDragSlot.Index}]" : 
                     $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
 
-                _beginDragSlot.SwapOrMoveIcon(endDragSlot);
+                TrySwapItems(_beginDragSlot, endDragSlot);
                 return;
             }
 
@@ -360,18 +359,22 @@ namespace Rito.InventorySystem
         {
             EditorLog($"UI - Remove Item : Slot [{index}]");
 
-            // Inventory.Remove()
-
-            _slotUIList[index].RemoveItem();
+            _inventory.Remove(index);
         }
 
+        /// <summary> 아이템 사용 </summary>
         private void TryUseItem(int index)
         {
             EditorLog($"UI - Use Item : Slot [{index}]");
 
-            // Inventory.Use()
+            _inventory.Use(index);
+        }
 
-            _slotUIList[index].RemoveItem();
+        /// <summary> 두 슬롯의 아이템 교환 </summary>
+        private void TrySwapItems(ItemSlotUI from, ItemSlotUI to)
+        {
+            from.SwapOrMoveIcon(to);
+            _inventory.Swap(from.Index, to.Index);
         }
 
         #endregion
@@ -379,6 +382,12 @@ namespace Rito.InventorySystem
         *                               Public Methods
         ***********************************************************************/
         #region .
+
+        /// <summary> 인벤토리 참조 등록 (인벤토리에서 직접 호출) </summary>
+        public void SetInventoryReference(Inventory inventory)
+        {
+            _inventory = inventory;
+        }
 
         /// <summary> 마우스 클릭 좌우 반전시키기 (true : 반전) </summary>
         public void InvertMouse(bool value)
@@ -402,14 +411,25 @@ namespace Rito.InventorySystem
         {
             EditorLog($"Set Item Amount : Slot [{index}], Amount [{amount}]");
 
-            // amount가 1 이하일 경우 텍스트 미표시
+            // NOTE : amount가 1 이하일 경우 텍스트 미표시
             _slotUIList[index].SetItemAmount(amount);
         }
 
         /// <summary> 슬롯에서 아이템 아이콘 제거, 개수 텍스트 숨기기 </summary>
         public void RemoveItem(int index)
         {
+            EditorLog($"Remove Item : Slot [{index}]");
+
             _slotUIList[index].RemoveItem();
+        }
+
+        /// <summary> 접근 가능한 슬롯 범위 설정 </summary>
+        public void SetAccessibleSlotRange(int accessibleSlotCount)
+        {
+            for (int i = 0; i < _slotUIList.Count; i++)
+            {
+                _slotUIList[i].SetAccessibleState(i < accessibleSlotCount);
+            }
         }
 
         #endregion

@@ -8,22 +8,30 @@ using UnityEngine;
 
 namespace Rito.VoxelSystem
 {
+    using Random = UnityEngine.Random;
+
     public class World : MonoBehaviour
     {
         /***********************************************************************
         *                               Public Const Fields
         ***********************************************************************/
         #region .
-        public const int Air = 0;
-        public const int Grass = 1;
-        public const int Ground = 2;
-        public const int Stone = 3;
+        public const byte Air = 0;
+        public const byte Bedrock = 1; // 기반암
+        public const byte Stone = 2;
+        public const byte Grass = 3; // 지표면
+        public const byte Sand  = 4;
+        public const byte Dirt  = 5; // 지표면 아래 땅속(3과 이어짐)
 
         #endregion
         /***********************************************************************
         *                               Public Fields
         ***********************************************************************/
         #region .
+        [Space]
+        public int seed;
+        public BiomeData biome;
+
         [Space]
         public Transform player;
         public Vector3 spawnPosition;
@@ -58,6 +66,8 @@ namespace Rito.VoxelSystem
         #region .
         private void Start()
         {
+            Random.InitState(seed);
+
             InitPositions();
             //GenerateWorld(); // 필요 X (UpdateChunksInViewRange()에서 수행)
         }
@@ -207,13 +217,73 @@ namespace Rito.VoxelSystem
         /// <summary> 해당 위치의 블록 타입 검사</summary>
         public byte GetBlockType(in Vector3 worldPos)
         {
-            if(!IsBlockInWorld(worldPos))
-                return Air;
+            // NOTE : 모든 값은 0보다 크거나 같기 때문에 Mathf.FloorToInt() 할 필요 없음
 
-            if(worldPos.y >= VoxelData.ChunkHeight - 1)
-                return Grass;
+            int yPos = (int)worldPos.y;
+            byte blockType = Air;
+
+            /* --------------------------------------------- *
+             *                Immutable Pass                 *
+             * --------------------------------------------- */
+            // 월드 밖 : 공기
+            if (!IsBlockInWorld(worldPos))
+                return Air;
+            
+            // 높이 0은 기반암
+            if(yPos == 0)
+                return Bedrock;
+
+            /* --------------------------------------------- *
+             *              Basic Terrain Pass               *
+             * --------------------------------------------- */
+            // noise : 0.0 ~ 1.0
+            float noise = Noise.Get2DPerlin(new Vector2(worldPos.x, worldPos.z), 0f, biome.terrainScale);
+
+            // 지형 높이 : solidGroundHeight ~ (solidGroundHeight + terrainHeightRange)
+            float terrainHeight = (int)(biome.terrainHeightRange * noise) + biome.solidGroundHeight;
+
+
+            // 공기
+            if (yPos > terrainHeight)
+            {
+                return Air;
+            }
+
+            // 지면
+            if (yPos == terrainHeight)
+            {
+                blockType = Grass;
+            }
+            // 얕은 땅속
+            else if (terrainHeight - 4 < yPos && yPos < terrainHeight)
+            {
+                blockType = Dirt;
+            }
+            // 깊은 땅속
             else
-                return Ground;
+            {
+                blockType = Stone;
+            }
+
+            /* --------------------------------------------- *
+             *              Second Terrain Pass              *
+             * --------------------------------------------- */
+
+            if (blockType == Stone)
+            {
+                foreach (var lode in biome.lodes)
+                {
+                    if (lode.minHeight < yPos && yPos < lode.maxHeight)
+                    {
+                        if (Noise.Get3DPerlin(worldPos, lode.noiseOffset, lode.scale, lode.threshold))
+                        {
+                            blockType = lode.blockID;
+                        }
+                    }
+                }
+            }
+
+            return blockType;
         }
 
         /// <summary> 해당 위치의 블록이 단단한지 검사</summary>

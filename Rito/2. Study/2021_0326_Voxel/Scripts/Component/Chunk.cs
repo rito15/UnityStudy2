@@ -150,7 +150,11 @@ namespace Rito.VoxelSystem
                 {
                     for (int z = 0; z < VoxelData.ChunkWidth; z++)
                     {
-                        AddVoxelDataToChunk(new Vector3(x, y, z));
+                        Vector3 pos = new Vector3(x, y, z);
+
+                        // 해당 좌표의 블록이 Solid인 경우에만 그리기
+                        if(IsSolid(pos))
+                            AddVoxelDataToChunk(pos);
                     }
                 }
             }
@@ -168,7 +172,7 @@ namespace Rito.VoxelSystem
                 // => 청크의 외곽 부분만 면이 그려지고, 내부에는 면이 그려지지 않도록
 
                 // 각 면(삼각형 2개) 그리기
-                if (IsSolid(pos) && !IsSolid(pos + VoxelData.faceChecks[face]))
+                if (!IsSolid(pos + VoxelData.faceChecks[face]))
                 {
                     byte blockID = GetBlockID(pos);
 

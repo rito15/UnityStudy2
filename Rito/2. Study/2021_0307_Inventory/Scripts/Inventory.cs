@@ -32,13 +32,21 @@ using UnityEngine;
 
     - ADD 구현 [완료]
 
-    - 현재 사용할 수 없는 슬롯 영역을 인벤토리에서 인벤토리 UI로 정보 전달(게임 시작 시),
-      해당 슬롯들은 레이캐스트도 안되게 막아버리고 색상도 다르게
-      (ItemSlotUI에서 SetUsable(true/false) 메소드 제공 => false이면 레이캐스트 타겟 false하면 될듯)
+    - Unaccessible Slot 구현 [완료]
 
-    - UI의 드래그앤드롭, 아이템 제거 -> Try~() 메소드들 : Inventory에 명령 전달하도록 구현
+    - Drag & Drop 구현 [완료]
 
-    - 아이템 습득, 버리기, 사용, 정렬 등등 구현
+    - 아이템 습득 구현 [완료]
+
+    - 아이템 버리기 구현 [완료]
+
+    - 드래그 앤 드롭 시 소비 아이템은 개수 합치도록 구현(Max 넘치면 Max까지만)
+
+    - 아이템 정렬 구현
+
+    - 아이템 분리 구현
+
+    - 인스펙터에서 가시적으로 아이템 슬롯 확인할 수 있도록(null인지 아닌지 여부) 커스텀 에디터 작성
 
     - 인벤토리 아이템 아이콘에 마우스 올리면 뜨는 툴팁 구현
 
@@ -99,6 +107,9 @@ namespace Rito.InventorySystem
             _itemArray = new Item[_maxCapacity];
             _itemIndexDict = new Dictionary<ItemData, int>();
             Capacity = _initalCapacity;
+
+            _inventoryUI.SetInventoryReference(this);
+            UpdateAccessibleStatesAll();
         }
 
         #endregion
@@ -272,6 +283,22 @@ namespace Rito.InventorySystem
             Item temp = _itemArray[indexA];
             _itemArray[indexA] = _itemArray[indexB];
             _itemArray[indexB] = temp;
+
+            // Update Both
+            UpdateUI(indexA);
+            UpdateUI(indexB);
+        }
+
+        /// <summary> 해당 슬롯의 아이템 사용 </summary>
+        public void Use(int index)
+        {
+            if(!IsValidIndex(index)) return;
+
+            // 아이템 사용
+
+
+            // UI 제거
+            _inventoryUI.RemoveItem(index);
         }
 
         /// <summary> 해당하는 인덱스의 슬롯 상태를 UI에 갱신 </summary>
@@ -288,12 +315,20 @@ namespace Rito.InventorySystem
 
                 // 셀 수 있는 아이템이면 수량 텍스트 표시
                 if (item is CountableItem ci)
+                {
                     _inventoryUI.SetItemAmount(index, ci.Amount);
+                }
+                // 셀 수 없는 아이템인 경우 수량 : 1 (제거)
+                else
+                {
+                    _inventoryUI.SetItemAmount(index, 1);
+                }
             }
             // 빈 슬롯인 경우 : 아이콘 제거
             else
             {
                 _inventoryUI.RemoveItem(index);
+                _inventoryUI.SetItemAmount(index, -1); // 수량 텍스트 제거
             }
         }
 
@@ -304,6 +339,12 @@ namespace Rito.InventorySystem
             {
                 UpdateUI(i);
             }
+        }
+
+        /// <summary> 모든 슬롯 UI에 접근 가능 여부 설정 </summary>
+        public void UpdateAccessibleStatesAll()
+        {
+            _inventoryUI.SetAccessibleSlotRange(Capacity);
         }
 
         #endregion

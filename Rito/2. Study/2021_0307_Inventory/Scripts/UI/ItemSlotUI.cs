@@ -46,6 +46,9 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯이 아이템을 보유하고 있는지 여부 </summary>
         public bool HasItem => _iconImage.sprite != null;
 
+        /// <summary> 접근 가능한 슬롯인지 여부 </summary>
+        public bool IsAccessible { get; private set; } = true;
+
         public RectTransform IconRect => _iconRect;
 
         #endregion
@@ -62,7 +65,12 @@ namespace Rito.InventorySystem
         private GameObject _textGo;
         private GameObject _highlightGo;
 
+        private Image _slotImage;
+
         private float _currentHLAlpha = 0f;
+
+        /// <summary> 비활성화된 슬롯의 색상 </summary>
+        private static readonly Color DisabledSlotColor = new Color(0.2f, 0.2f, 0.2f, 1.0f);
 
         #endregion
         /***********************************************************************
@@ -92,6 +100,9 @@ namespace Rito.InventorySystem
             _iconGo = _iconRect.gameObject;
             _textGo = _amountText.gameObject;
             _highlightGo = _highlightImage.gameObject;
+
+            // Images
+            _slotImage = GetComponent<Image>();
         }
         private void InitValues()
         {
@@ -134,13 +145,33 @@ namespace Rito.InventorySystem
 
         public void SetSlotIndex(int index) => Index = index;
 
+        /// <summary> 접근 가능/불가능 여부 설정 </summary>
+        public void SetAccessibleState(bool value)
+        {
+            // 이미 처리가 완료된 슬롯이면 중복 처리 X
+            if(value == IsAccessible) return;
+
+            if (value)
+            {
+                _slotImage.color = Color.black;
+            }
+            else
+            {
+                _slotImage.color = DisabledSlotColor;
+                HideIcon();
+                HideText();
+            }
+
+            IsAccessible = value;
+        }
+
         /// <summary> 다른 슬롯과 아이템 아이콘 교환 </summary>
         public void SwapOrMoveIcon(ItemSlotUI other)
         {
             if (other == null) return;
-
-            // 자기 자신과 교환 불가
-            if (other == this) return;
+            if (other == this) return; // 자기 자신과 교환 불가
+            if (!this.IsAccessible) return;
+            if (!other.IsAccessible) return;
 
             var temp = _iconImage.sprite;
 
@@ -156,6 +187,8 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯에 아이템 등록 </summary>
         public void SetItem(Sprite itemSprite)
         {
+            if (!this.IsAccessible) return;
+
             if (itemSprite != null)
             {
                 _iconImage.sprite = itemSprite;
@@ -175,7 +208,7 @@ namespace Rito.InventorySystem
             HideText();
         }
 
-        /// <summary> 이미지 투명도 설정 </summary>
+        /// <summary> 아이템 이미지 투명도 설정 </summary>
         public void SetIconAlpha(float alpha)
         {
             _iconImage.color = new Color(
@@ -186,7 +219,9 @@ namespace Rito.InventorySystem
         /// <summary> 아이템 개수 텍스트 설정(amount가 1 이하일 경우 텍스트 미표시) </summary>
         public void SetItemAmount(int amount)
         {
-            if(HasItem && amount > 1)
+            if (!this.IsAccessible) return;
+
+            if (HasItem && amount > 1)
                 ShowText();
             else
                 HideText();
@@ -194,8 +229,11 @@ namespace Rito.InventorySystem
             _amountText.text = amount.ToString();
         }
 
+        /// <summary> 슬롯에 하이라이트 표시/해제 </summary>
         public void Highlight(bool value)
         {
+            if (!this.IsAccessible) return;
+
             if (value)
                 StartCoroutine("HighlightFadeInRoutine");
             else

@@ -242,6 +242,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60977cb960fcefe419871082b3622d6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 2147483647
+  biome: {fileID: 11400000, guid: 0893b73e3ea76b84dbdc6d80554d66d9, type: 2}
   player: {fileID: 2057593555}
   spawnPosition: {x: 0, y: 0, z: 0}
   material: {fileID: 2100000, guid: 5b25ba4facfc38a4cb836dddef473c0e, type: 2}
@@ -254,6 +256,22 @@ MonoBehaviour:
     leftFaceTextureID: 0
     rightFaceTextureID: 0
     bottomFaceTextureID: 0
+  - blockName: Bedrock
+    isSolid: 1
+    topFaceTextureID: 68
+    frontFaceTextureID: 68
+    backFaceTextureID: 68
+    leftFaceTextureID: 68
+    rightFaceTextureID: 68
+    bottomFaceTextureID: 68
+  - blockName: Stone
+    isSolid: 1
+    topFaceTextureID: 77
+    frontFaceTextureID: 77
+    backFaceTextureID: 77
+    leftFaceTextureID: 77
+    rightFaceTextureID: 77
+    bottomFaceTextureID: 77
   - blockName: Grass
     isSolid: 1
     topFaceTextureID: 15
@@ -262,7 +280,15 @@ MonoBehaviour:
     leftFaceTextureID: 43
     rightFaceTextureID: 43
     bottomFaceTextureID: 52
-  - blockName: Ground
+  - blockName: Sand
+    isSolid: 1
+    topFaceTextureID: 61
+    frontFaceTextureID: 61
+    backFaceTextureID: 61
+    leftFaceTextureID: 61
+    rightFaceTextureID: 61
+    bottomFaceTextureID: 61
+  - blockName: Dirt
     isSolid: 1
     topFaceTextureID: 52
     frontFaceTextureID: 52
@@ -270,14 +296,6 @@ MonoBehaviour:
     leftFaceTextureID: 52
     rightFaceTextureID: 52
     bottomFaceTextureID: 52
-  - blockName: Stone
-    isSolid: 1
-    topFaceTextureID: 41
-    frontFaceTextureID: 68
-    backFaceTextureID: 68
-    leftFaceTextureID: 68
-    rightFaceTextureID: 68
-    bottomFaceTextureID: 68
 --- !u!4 &1778418774
 Transform:
   m_ObjectHideFlags: 0

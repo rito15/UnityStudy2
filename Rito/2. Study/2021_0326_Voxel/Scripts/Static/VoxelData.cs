@@ -26,13 +26,16 @@ namespace Rito.VoxelSystem
         *                               Static Fields
         ***********************************************************************/
         #region .
-        public static readonly int ChunkWidth = 5;  // 청크 내의 X, Z 성분 복셀 개수
-        public static readonly int ChunkHeight = 15; // 청크 내의 Y 성분 복셀 개수
+        // 청크 내의 X, Z 성분 복셀 개수
+        public static readonly int ChunkWidth = 16;
 
-        /// <summary> 월드의 X, Z 성분 청크 개수 </summary>
-        public static readonly int WorldSizeInChunks = 100;
+        // 청크 내의 Y 성분 복셀 개수
+        public static readonly int ChunkHeight = 128;
 
-        /// <summary> 월드의 X, Z 성분 복셀(큐브) 개수 </summary>
+        /// <summary> 월드의 각 X, Z 성분 청크 개수 </summary>
+        public static readonly int WorldSizeInChunks = 10;
+
+        /// <summary> 월드의 각 X, Z 성분 복셀(큐브) 개수 </summary>
         public static int WorldSizeInVoxels => WorldSizeInChunks * ChunkWidth;
 
         /// <summary> 시야 범위(단위 : 청크 개수) </summary>

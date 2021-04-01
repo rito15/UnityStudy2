@@ -26,6 +26,26 @@ using UnityEngine;
 
 */
 
+
+/*
+    [기능]
+    - [o] 사용 가능/불가능 슬롯 관리
+    - [o] 셀 수 있는 아이템은 텍스트로 개수 표시
+    - [o] 아이템 이미지 드래그 앤 드롭
+    - [o] 아이템 습득
+        - 아이템 컨테이너 프리팹으로부터 습득
+    - [o] 아이템 버리기
+        - 버리려고 할 때 팝업으로 물어보기
+        - 버리는데 성공하면 아이템 컨테이너 프리팹 생성
+    - [o] 아이템끼리 슬롯 교체
+    - [o] 마우스 올린 슬롯에 하이라이트 표시
+    - 마우스 올린 슬롯에 아이템이 있으면 툴팁 UI 표시
+    - 동일한 셀 수 있는 아이템끼리 드래그 앤 드롭할 경우 개수 합치기
+    - 셀 수 있는 아이템 개수 나누기(Shift 클릭, 나눌 개수 팝업으로 지정)
+    - 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
+    - 빈칸 없이 정렬하기(타입에 따라)
+*/
+
 /*
 
     [TODO]
@@ -87,12 +107,9 @@ namespace Rito.InventorySystem
         [SerializeField]
         private InventoryUI _inventoryUI; // 연결된 인벤토리 UI
 
-        /// <summary> 아이템 목록 배열 </summary>
+        /// <summary> 아이템 목록 </summary>
         [SerializeField]
-        private Item[] _itemArray;
-
-        /// <summary> 아이템 - 인덱스 테이블 </summary>
-        private Dictionary<ItemData, int> _itemIndexDict;
+        private Item[] _items;
 
         /// <summary> UI 갱신이 필요한 인덱스 목록 </summary>
         private List<int> _waitForUpdateList = new List<int>();
@@ -104,8 +121,7 @@ namespace Rito.InventorySystem
         #region .
         private void Awake()
         {
-            _itemArray = new Item[_maxCapacity];
-            _itemIndexDict = new Dictionary<ItemData, int>();
+            _items = new Item[_maxCapacity];
             Capacity = _initalCapacity;
 
             _inventoryUI.SetInventoryReference(this);
@@ -127,7 +143,7 @@ namespace Rito.InventorySystem
         private int FindEmptySlotIndex(int startIndex = 0)
         {
             for(int i = startIndex; i < Capacity; i++)
-                if(_itemArray[i] == null)
+                if(_items[i] == null)
                     return i;
             return -1;
         }
@@ -137,7 +153,7 @@ namespace Rito.InventorySystem
         {
             for (int i = startIndex; i < Capacity; i++)
             {
-                var current = _itemArray[i];
+                var current = _items[i];
                 if(current == null)
                     continue;
 
@@ -161,6 +177,7 @@ namespace Rito.InventorySystem
         public void ConnectUI(InventoryUI inventoryUI)
         {
             _inventoryUI = inventoryUI;
+            _inventoryUI.SetInventoryReference(this);
         }
 
         /// <summary> 인벤토리에 아이템 추가
@@ -193,7 +210,7 @@ namespace Rito.InventorySystem
                         // 기존재 슬롯을 찾은 경우, 양 증가시키고 초과량 존재 시 amount에 초기화
                         else
                         {
-                            CountableItem ci = _itemArray[index] as CountableItem;
+                            CountableItem ci = _items[index] as CountableItem;
                             amount = ci.AddAmountAndGetExcess(amount);
 
                             UpdateUI(index);
@@ -212,7 +229,7 @@ namespace Rito.InventorySystem
                         // 빈 슬롯 발견 시, 슬롯에 아이템 추가 및 잉여량 계산
                         else
                         {
-                            _itemArray[index] = new CountableItem(ciData, amount);
+                            _items[index] = new CountableItem(ciData, amount);
                             amount = (amount > ciData.MaxAmount) ? (amount - ciData.MaxAmount) : 0;
 
                             UpdateUI(index);
@@ -230,7 +247,7 @@ namespace Rito.InventorySystem
                     if (index != -1)
                     {
                         // 아이템을 슬롯에 추가
-                        _itemArray[index] = new Item(itemData);
+                        _items[index] = new Item(itemData);
                         amount = 0;
 
                         UpdateUI(index);
@@ -251,7 +268,7 @@ namespace Rito.InventorySystem
                     }
 
                     // 아이템을 슬롯에 추가
-                    _itemArray[index] = new Item(itemData);
+                    _items[index] = new Item(itemData);
 
                     UpdateUI(index);
                 }
@@ -267,7 +284,7 @@ namespace Rito.InventorySystem
         {
             if(!IsValidIndex(index)) return false;
 
-            _itemArray[index] = null;
+            _items[index] = null;
             _inventoryUI.RemoveItem(index);
 
             return true;
@@ -280,9 +297,9 @@ namespace Rito.InventorySystem
             if(!IsValidIndex(indexB)) return;
 
             // Swap
-            Item temp = _itemArray[indexA];
-            _itemArray[indexA] = _itemArray[indexB];
-            _itemArray[indexB] = temp;
+            Item temp = _items[indexA];
+            _items[indexA] = _items[indexB];
+            _items[indexB] = temp;
 
             // Update Both
             UpdateUI(indexA);
@@ -306,7 +323,7 @@ namespace Rito.InventorySystem
         {
             if(!IsValidIndex(index)) return;
 
-            Item item = _itemArray[index];
+            Item item = _items[index];
 
             // 아이템이 슬롯에 존재하는 경우 : 아이콘 등록
             if (item != null)
@@ -345,6 +362,15 @@ namespace Rito.InventorySystem
         public void UpdateAccessibleStatesAll()
         {
             _inventoryUI.SetAccessibleSlotRange(Capacity);
+        }
+
+        /// <summary> 해당 슬롯의 아이템 정보 넘겨주기 </summary>
+        public ItemData GetItemData(int slotIndex)
+        {
+            if(!IsValidIndex(slotIndex)) return null;
+            if(_items[slotIndex] == null) return null;
+
+            return _items[slotIndex].Data;
         }
 
         #endregion

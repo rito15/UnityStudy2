@@ -20,6 +20,9 @@ public class Test_InventoryUI : MonoBehaviour
             for (int i = 0; i < _itemDataArray.Length; i++)
             {
                 _inventory.Add(_itemDataArray[i], 3);
+
+                if(_itemDataArray[i] is CountableItemData)
+                    _inventory.Add(_itemDataArray[i], 255);
             }
         }
     }

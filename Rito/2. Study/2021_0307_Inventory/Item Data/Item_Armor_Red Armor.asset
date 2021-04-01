@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _id: 4
   _name: "\uBD89\uC740 \uAC11\uC637"
+  _tooltip: "\uC0C8\uBE68\uAC04 \uAC11\uC637\uC774\uB2E4."
   _iconSprite: {fileID: 21300000, guid: b28431a32956a32408d55628950ee7b1, type: 3}
   _dropItemPrefab: {fileID: 0}
   _maxDurability: 150

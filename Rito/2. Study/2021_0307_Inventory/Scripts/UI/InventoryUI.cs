@@ -43,7 +43,8 @@ namespace Rito.InventorySystem
 
         [Space]
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
-        [SerializeField] private GameObject _slotUiPrefab;
+        [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
+        [SerializeField] private ItemTooltipUI _itemTooltip;   // 아이템 정보를 보여줄 툴팁 UI
 
         [Space]
         [SerializeField] private bool _mouseReversed = false; // 마우스 클릭 반전 여부
@@ -89,6 +90,7 @@ namespace Rito.InventorySystem
             _ped.position = Input.mousePosition;
 
             OnPointerEnterAndExit();
+            ShowOrHideItemTooltip();
             OnPointerDown();
             OnPointerDrag();
             OnPointerUp();
@@ -119,6 +121,14 @@ namespace Rito.InventorySystem
             // 3. Graphic Raycaster
             _ped = new PointerEventData(EventSystem.current);
             _rrList = new List<RaycastResult>(10);
+
+            // 4. Item Tooltip UI
+            if (_itemTooltip == null)
+            {
+                _itemTooltip = GetComponentInChildren<ItemTooltipUI>();
+                EditorLog("인스펙터에서 아이템 툴팁 UI를 직접 지정하지 않아 자식에서 발견하여 초기화하였습니다.");
+            }
+            _itemTooltip.Hide();
         }
 
         /// <summary> 지정된 개수만큼 슬롯 영역 내에 슬롯들 동적 생성 </summary>
@@ -221,6 +231,7 @@ namespace Rito.InventorySystem
                 }
             }
 
+            // ===================== Local Methods ===============================
             void OnCurrentEnter()
             {
                 curSlot.Highlight(true);
@@ -229,22 +240,29 @@ namespace Rito.InventorySystem
                 {
                     EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
 
-                    // 툴팁 보여주기
-
+                    // 툴팁 정보 갱신
+                    _itemTooltip.SetItemInfo(_inventory.GetItemData(curSlot.Index));
                 }
             }
-
             void OnPrevExit()
             {
                 prevSlot.Highlight(false);
 
-                if (prevSlot.HasItem)
-                {
-                    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
-
-                    // 툴팁 사라지기
-                }
+                //if (prevSlot.HasItem)
+                //{
+                //    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
+                //}
             }
+        }
+        /// <summary> 아이템 정보 툴팁 보여주거나 감추기 </summary>
+        private void ShowOrHideItemTooltip()
+        {
+            // 마우스가 유효한 아이템 아이콘 위에 올라와 있다면 툴팁 보여주기
+            if(_pointerOverSlot != null && _pointerOverSlot.HasItem && _pointerOverSlot.IsAccessible)
+                _itemTooltip.Show();
+            // 그렇지 않다면 사라지기
+            else
+                _itemTooltip.Hide();
         }
         /// <summary> 슬롯에 클릭하는 경우 </summary>
         private void OnPointerDown()

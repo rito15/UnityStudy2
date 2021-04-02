@@ -128,6 +128,7 @@ namespace Rito.InventorySystem
                 _itemTooltip = GetComponentInChildren<ItemTooltipUI>();
                 EditorLog("인스펙터에서 아이템 툴팁 UI를 직접 지정하지 않아 자식에서 발견하여 초기화하였습니다.");
             }
+            _itemTooltip.Init();
             _itemTooltip.Hide();
         }
 
@@ -147,6 +148,7 @@ namespace Rito.InventorySystem
                     int slotIndex = (_slotCountPerLine * j) + i;
 
                     var slotRT = CloneSlot();
+                    slotRT.pivot = new Vector2(0f, 1f); // Left Top
                     slotRT.anchoredPosition = curPos;
                     slotRT.gameObject.SetActive(true);
                     slotRT.gameObject.name = $"Item Slot [{slotIndex}]";
@@ -242,6 +244,9 @@ namespace Rito.InventorySystem
 
                     // 툴팁 정보 갱신
                     _itemTooltip.SetItemInfo(_inventory.GetItemData(curSlot.Index));
+
+                    // 툴팁 위치 조정
+                    _itemTooltip.SetRectPosition(curSlot.SlotRect);
                 }
             }
             void OnPrevExit()
@@ -567,6 +572,10 @@ namespace Rito.InventorySystem
             {
                 int count = _slotCountPerLine * _slotLineCount;
                 __previewSlotGoList.Capacity = count;
+
+                // 슬롯의 피벗은 Left Top으로 고정
+                RectTransform slotPrefabRT = _slotUiPrefab.GetComponent<RectTransform>();
+                slotPrefabRT.pivot = new Vector2(0f, 1f);
 
                 for (int i = 0; i < count; i++)
                 {

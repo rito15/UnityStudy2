@@ -49,6 +49,7 @@ namespace Rito.InventorySystem
         /// <summary> 접근 가능한 슬롯인지 여부 </summary>
         public bool IsAccessible { get; private set; } = true;
 
+        public RectTransform SlotRect => _slotRect;
         public RectTransform IconRect => _iconRect;
 
         #endregion
@@ -58,6 +59,7 @@ namespace Rito.InventorySystem
         #region .
         private InventoryUI _inventoryUI;
 
+        private RectTransform _slotRect;
         private RectTransform _iconRect;
         private RectTransform _highlightRect;
 
@@ -93,6 +95,7 @@ namespace Rito.InventorySystem
             _inventoryUI = GetComponentInParent<InventoryUI>();
 
             // Rects
+            _slotRect = GetComponent<RectTransform>();
             _iconRect = _iconImage.rectTransform;
             _highlightRect = _highlightImage.rectTransform;
 
@@ -107,8 +110,8 @@ namespace Rito.InventorySystem
         private void InitValues()
         {
             // 1. Item Icon, Highlight Rect
-            _iconRect.pivot = new Vector2(0.5f, 0.5f);
-            _iconRect.anchorMin = Vector2.zero;
+            _iconRect.pivot = new Vector2(0.5f, 0.5f); // 피벗은 중앙
+            _iconRect.anchorMin = Vector2.zero;        // 앵커는 Top Left
             _iconRect.anchorMax = Vector2.one;
 
             // 패딩 조절

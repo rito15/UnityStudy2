@@ -33,6 +33,8 @@ namespace Rito.VoxelSystem
             get => chunkTransform.position;
         }
 
+        public byte[,,] VoxelMap => voxelMap;
+
         #endregion
         /***********************************************************************
         *                               Component Fields
@@ -120,6 +122,9 @@ namespace Rito.VoxelSystem
                 y >= 0 && y < VoxelData.ChunkHeight;
         }
 
+        private Vector3 ToWorldPos(in Vector3 pos) => WorldPos + pos;
+        private Vector3 ToWorldPos(int x, int y, int z) => WorldPos + new Vector3(x, y, z);
+
         #endregion
         /***********************************************************************
         *                               Private Methods
@@ -135,7 +140,7 @@ namespace Rito.VoxelSystem
                 {
                     for (int z = 0; z < VoxelData.ChunkWidth; z++)
                     {
-                        voxelMap[x, y, z] = world.GetBlockType(new Vector3(x, y, z) + WorldPos);
+                        voxelMap[x, y, z] = world.CalculateBlockType(ToWorldPos(x, y, z));
                     }
                 }
             }
@@ -153,7 +158,7 @@ namespace Rito.VoxelSystem
                         Vector3 pos = new Vector3(x, y, z);
 
                         // 해당 좌표의 블록이 Solid인 경우에만 그리기
-                        if(IsSolid(pos))
+                        if(world.CalculateSolidState(ToWorldPos(pos)))
                             AddVoxelDataToChunk(pos);
                     }
                 }
@@ -172,7 +177,7 @@ namespace Rito.VoxelSystem
                 // => 청크의 외곽 부분만 면이 그려지고, 내부에는 면이 그려지지 않도록
 
                 // 각 면(삼각형 2개) 그리기
-                if (!IsSolid(pos + VoxelData.faceChecks[face]))
+                if (!world.CalculateSolidState(ToWorldPos(pos + VoxelData.faceChecks[face])))
                 {
                     byte blockID = GetBlockID(pos);
 

@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace Rito.VoxelSystem
 {
+    using BlockTypeIndex = Byte;
     using Random = UnityEngine.Random;
 
     public class World : MonoBehaviour
@@ -69,7 +70,7 @@ namespace Rito.VoxelSystem
             Random.InitState(seed);
 
             InitPositions();
-            //GenerateWorld(); // 필요 X (UpdateChunksInViewRange()에서 수행)
+            GenerateWorld();
         }
 
         private void Update()
@@ -134,7 +135,7 @@ namespace Rito.VoxelSystem
             );
             player.position = spawnPosition;
 
-            prevPlayerCoord = new ChunkCoord(-1, -1);
+            prevPlayerCoord = //new ChunkCoord(-1, -1);
             currentPlayerCoord = GetChunkCoordFromWorldPos(player.position);
         }
 
@@ -149,6 +150,7 @@ namespace Rito.VoxelSystem
                 for (int z = viewMin; z < viewMax; z++)
                 {
                     CreateNewChunk(x, z);
+                    currentActiveChunkList.Add(chunks[x,z]);
                 }
             }
         }
@@ -214,13 +216,13 @@ namespace Rito.VoxelSystem
         *                               Public Methods
         ***********************************************************************/
         #region .
-        /// <summary> 해당 위치의 블록 타입 검사</summary>
-        public byte GetBlockType(in Vector3 worldPos)
+        /// <summary> 해당 월드 위치의 블록 타입 인덱스 계산</summary>
+        public BlockTypeIndex CalculateBlockType(in Vector3 worldPos)
         {
             // NOTE : 모든 값은 0보다 크거나 같기 때문에 Mathf.FloorToInt() 할 필요 없음
 
             int yPos = (int)worldPos.y;
-            byte blockType = Air;
+            BlockTypeIndex blockType;
 
             /* --------------------------------------------- *
              *                Immutable Pass                 *
@@ -286,7 +288,32 @@ namespace Rito.VoxelSystem
             return blockType;
         }
 
-        /// <summary> 해당 위치의 블록이 단단한지 검사</summary>
+        /// <summary> 해당 월드 위치의 블록이 Solid인지 계산하여 가져오기 </summary>
+        public bool CalculateSolidState(in Vector3 worldPos)
+        {
+            return blockTypes[CalculateBlockType(worldPos)].isSolid;
+        }
+
+        /// <summary> 해당 월드 위치의 블록 타입 인덱스 가져오기(이미 계산된 값) </summary>
+        public BlockTypeIndex GetBlockType(in Vector3 worldPos)
+        {
+            int x = (int)worldPos.x;
+            int y = (int)worldPos.y;
+            int z = (int)worldPos.z;
+
+            int chunkX = x / VoxelData.ChunkWidth;
+            int chunkZ = z / VoxelData.ChunkWidth;
+
+            x -= (chunkX * VoxelData.ChunkWidth);
+            z -= (chunkZ * VoxelData.ChunkWidth);
+
+            //x %= VoxelData.ChunkWidth;
+            //z %= VoxelData.ChunkWidth;
+
+            return chunks[chunkX, chunkZ].VoxelMap[x, y, z];
+        }
+
+        /// <summary> 해당 위치의 블록이 단단한지 검사(이미 계산된 값)</summary>
         public bool IsBlockSolid(in Vector3 worldPos)
         {
             return blockTypes[GetBlockType(worldPos)].isSolid;

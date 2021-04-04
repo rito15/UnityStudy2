@@ -181,6 +181,10 @@ namespace Rito.VoxelSystem
                 {
                     byte blockID = GetBlockID(pos);
 
+                    // NOTE : 실제로 큐브의 정점은 8개이지만, 각 면마다 UV가 다르게 입혀져야 하므로
+                    //        면이 3개씩 겹치는 각 정점은 면마다 하나의 정점을 갖도록
+                    //        결국 한 큐브의 정점은 8 * 3 = 24개가 되는 것이 맞음
+
                     // 1. Vertex 4개 추가
                     for (int i = 0; i <= 3; i++)
                     {

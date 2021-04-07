@@ -29,6 +29,8 @@ namespace Rito.InventorySystem
         #region .
         private RectTransform _rt;
 
+        private CanvasScaler _canvasScaler;
+
         private static readonly Vector2 LeftTop = new Vector2(0f, 1f);
         private static readonly Vector2 LeftBottom = new Vector2(0f, 0f);
         private static readonly Vector2 RightTop = new Vector2(1f, 1f);
@@ -83,6 +85,8 @@ namespace Rito.InventorySystem
             TryGetComponent(out _rt);
             _rt.pivot = LeftTop;
 
+            _canvasScaler = GetComponentInParent<CanvasScaler>();
+
             SetAllChildrenDisableRaycastTarget(transform);
         }
 
@@ -96,25 +100,23 @@ namespace Rito.InventorySystem
         /// <summary> 툴팁의 위치 조정 </summary>
         public void SetRectPosition(RectTransform slotRect)
         {
-            // 해상도에 유동적으로 대응 필요!!!!!!!!
+            // 캔버스 스케일러에 따른 해상도 대응
+            float wRatio = Screen.width / _canvasScaler.referenceResolution.x;
+            float hRatio = Screen.height / _canvasScaler.referenceResolution.y;
+            float ratio = 
+                wRatio * (1f - _canvasScaler.matchWidthOrHeight) +
+                hRatio * (_canvasScaler.matchWidthOrHeight);
 
+            float slotWidth = slotRect.rect.width * ratio;
+            float slotHeight = slotRect.rect.height * ratio;
 
-            _rt.position = slotRect.position; 
-            //Debug.Log($"offsetMin : {slotRect.offsetMin}, offsetMax : {slotRect.offsetMax}");
-            //Debug.Log($"sizeDelta : {slotRect.sizeDelta}");
-            //Debug.Log($"width : {slotRect.rect.width}");
-            //Debug.Log($"anchoredPosition : {slotRect.anchoredPosition}");
-            Debug.Log($"position : {slotRect.position}");
-
-            //return;
-
-
-            _rt.position = slotRect.position + new Vector3(slotRect.rect.width, -slotRect.rect.height);
-
-            float slotWidth = slotRect.rect.width;
-            float width = _rt.rect.width;
-            float height = _rt.rect.height;
+            // 툴팁 초기 위치(슬롯 우하단) 설정
+            _rt.position = slotRect.position + new Vector3(slotWidth, -slotHeight);
             Vector2 pos = _rt.position;
+
+            // 툴팁의 크기
+            float width = _rt.rect.width * ratio;
+            float height = _rt.rect.height * ratio;
 
             // 우측, 하단이 잘렸는지 여부
             bool rightTruncated = pos.x + width > Screen.width;
@@ -131,12 +133,12 @@ namespace Rito.InventorySystem
             // 아래쪽만 잘림 => 슬롯의 Right Top 방향으로 표시
             else if (!R && B)
             {
-                _rt.position = new Vector2(pos.x, pos.y + height);
+                _rt.position = new Vector2(pos.x, pos.y + height + slotHeight);
             }
             // 모두 잘림 => 슬롯의 Left Top 방향으로 표시
             else if (R && B)
             {
-                _rt.position = new Vector2(pos.x - width - slotWidth, pos.y + height);
+                _rt.position = new Vector2(pos.x - width - slotWidth, pos.y + height + slotHeight);
             }
             // 잘리지 않음 => 슬롯의 Right Bottom 방향으로 표시
             // Do Nothing

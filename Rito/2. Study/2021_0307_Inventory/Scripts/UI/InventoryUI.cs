@@ -45,6 +45,7 @@ namespace Rito.InventorySystem
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
         [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
         [SerializeField] private ItemTooltipUI _itemTooltip;   // 아이템 정보를 보여줄 툴팁 UI
+        [SerializeField] private GameObject _barrierGO;        // 클릭 방지 UI
 
         [Space]
         [SerializeField] private bool _mouseReversed = false; // 마우스 클릭 반전 여부
@@ -243,10 +244,7 @@ namespace Rito.InventorySystem
                     EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
 
                     // 툴팁 정보 갱신
-                    _itemTooltip.SetItemInfo(_inventory.GetItemData(curSlot.Index));
-
-                    // 툴팁 위치 조정
-                    _itemTooltip.SetRectPosition(curSlot.SlotRect);
+                    UpdateTooltipUI(curSlot);
                 }
             }
             void OnPrevExit()
@@ -263,9 +261,12 @@ namespace Rito.InventorySystem
         private void ShowOrHideItemTooltip()
         {
             // 마우스가 유효한 아이템 아이콘 위에 올라와 있다면 툴팁 보여주기
-            if(_pointerOverSlot != null && _pointerOverSlot.HasItem && _pointerOverSlot.IsAccessible)
+            bool isValid =
+                _pointerOverSlot != null && _pointerOverSlot.HasItem && _pointerOverSlot.IsAccessible
+                && (_pointerOverSlot != _beginDragSlot); // 드래그 시작한 슬롯이면 보여주지 않기
+
+            if (isValid)
                 _itemTooltip.Show();
-            // 그렇지 않다면 사라지기
             else
                 _itemTooltip.Hide();
         }
@@ -354,6 +355,9 @@ namespace Rito.InventorySystem
                     $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
 
                 TrySwapItems(_beginDragSlot, endDragSlot);
+
+                // 툴팁 갱신
+                UpdateTooltipUI(endDragSlot);
                 return;
             }
 
@@ -380,7 +384,7 @@ namespace Rito.InventorySystem
         /// <summary> UI 및 인벤토리에서 아이템 제거 </summary>
         private void TryRemoveItem(int index)
         {
-            EditorLog($"UI - Remove Item : Slot [{index}]");
+            EditorLog($"UI - Try Remove Item : Slot [{index}]");
 
             _inventory.Remove(index);
         }
@@ -388,7 +392,7 @@ namespace Rito.InventorySystem
         /// <summary> 아이템 사용 </summary>
         private void TryUseItem(int index)
         {
-            EditorLog($"UI - Use Item : Slot [{index}]");
+            EditorLog($"UI - Try Use Item : Slot [{index}]");
 
             _inventory.Use(index);
         }
@@ -396,8 +400,23 @@ namespace Rito.InventorySystem
         /// <summary> 두 슬롯의 아이템 교환 </summary>
         private void TrySwapItems(ItemSlotUI from, ItemSlotUI to)
         {
+            EditorLog($"UI - Try Swap Items: Slot [{from.Index} -> {to.Index}]");
+
             from.SwapOrMoveIcon(to);
             _inventory.Swap(from.Index, to.Index);
+        }
+
+        /// <summary> 툴팁 UI의 슬롯 데이터 갱신 </summary>
+        private void UpdateTooltipUI(ItemSlotUI slot)
+        {
+            if(!slot.IsAccessible || !slot.HasItem)
+                return;
+
+            // 툴팁 정보 갱신
+            _itemTooltip.SetItemInfo(_inventory.GetItemData(slot.Index));
+
+            // 툴팁 위치 조정
+            _itemTooltip.SetRectPosition(slot.SlotRect);
         }
 
         #endregion

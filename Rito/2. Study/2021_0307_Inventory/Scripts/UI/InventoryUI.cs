@@ -129,8 +129,6 @@ namespace Rito.InventorySystem
                 _itemTooltip = GetComponentInChildren<ItemTooltipUI>();
                 EditorLog("인스펙터에서 아이템 툴팁 UI를 직접 지정하지 않아 자식에서 발견하여 초기화하였습니다.");
             }
-            _itemTooltip.Init();
-            _itemTooltip.Hide();
         }
 
         /// <summary> 지정된 개수만큼 슬롯 영역 내에 슬롯들 동적 생성 </summary>
@@ -305,7 +303,7 @@ namespace Rito.InventorySystem
 
                 if (slot != null && slot.HasItem)
                 {
-                    EditorLog($"Use Item : Slot [{slot.Index}]");
+                    TryUseItem(slot.Index);
                 }
             }
         }
@@ -350,9 +348,9 @@ namespace Rito.InventorySystem
             // 아이템 슬롯끼리 아이콘 교환 또는 이동
             if (endDragSlot != null)
             {
-                EditorLog((_beginDragSlot == endDragSlot) ?
-                    $"Drag End(Same Slot) : [{_beginDragSlot.Index}]" : 
-                    $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
+                //EditorLog((_beginDragSlot == endDragSlot) ?
+                //    $"Drag End(Same Slot) : [{_beginDragSlot.Index}]" : 
+                //    $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
 
                 TrySwapItems(_beginDragSlot, endDragSlot);
 
@@ -364,7 +362,7 @@ namespace Rito.InventorySystem
             // 버리기(커서가 UI 레이캐스트 타겟 위에 있지 않은 경우)
             if (!IsOverUI())
             {
-                EditorLog($"Drag End(Remove) : Slot [{_beginDragSlot.Index}]");
+                //EditorLog($"Drag End(Remove) : Slot [{_beginDragSlot.Index}]");
 
                 TryRemoveItem(_beginDragSlot.Index);
             }
@@ -400,6 +398,12 @@ namespace Rito.InventorySystem
         /// <summary> 두 슬롯의 아이템 교환 </summary>
         private void TrySwapItems(ItemSlotUI from, ItemSlotUI to)
         {
+            if (from == to)
+            {
+                EditorLog($"UI - Try Swap Items: Same Slot [{from.Index}]");
+                return;
+            }
+
             EditorLog($"UI - Try Swap Items: Slot [{from.Index} -> {to.Index}]");
 
             from.SwapOrMoveIcon(to);
@@ -441,20 +445,28 @@ namespace Rito.InventorySystem
         }
 
         /// <summary> 슬롯에 아이템 아이콘 등록 </summary>
-        public void SetItem(int index, Sprite icon)
+        public void SetItemIcon(int index, Sprite icon)
         {
-            EditorLog($"Set Item : Slot [{index}]");
+            EditorLog($"Set Item Icon : Slot [{index}]");
 
             _slotUIList[index].SetItem(icon);
         }
 
         /// <summary> 해당 슬롯의 아이템 개수 텍스트 지정 </summary>
-        public void SetItemAmount(int index, int amount)
+        public void SetItemAmountText(int index, int amount)
         {
-            EditorLog($"Set Item Amount : Slot [{index}], Amount [{amount}]");
+            EditorLog($"Set Item Amount Text : Slot [{index}], Amount [{amount}]");
 
             // NOTE : amount가 1 이하일 경우 텍스트 미표시
             _slotUIList[index].SetItemAmount(amount);
+        }
+
+        /// <summary> 해당 슬롯의 아이템 개수 텍스트 지정 </summary>
+        public void HideItemAmountText(int index)
+        {
+            EditorLog($"Hide Item Amount Text : Slot [{index}]");
+
+            _slotUIList[index].SetItemAmount(1);
         }
 
         /// <summary> 슬롯에서 아이템 아이콘 제거, 개수 텍스트 숨기기 </summary>

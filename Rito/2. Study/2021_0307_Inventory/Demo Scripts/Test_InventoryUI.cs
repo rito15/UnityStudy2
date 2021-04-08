@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Rito.InventorySystem;
 
 // 날짜 : 2021-03-19 PM 11:01:36
@@ -12,6 +13,8 @@ public class Test_InventoryUI : MonoBehaviour
     public Inventory _inventory;
 
     public ItemData[] _itemDataArray;
+    
+    public Button _trimButton;
 
     private void Start()
     {
@@ -25,5 +28,8 @@ public class Test_InventoryUI : MonoBehaviour
                     _inventory.Add(_itemDataArray[i], 255);
             }
         }
+
+        _trimButton.onClick.AddListener(_inventory.TrimAll);
     }
+
 }

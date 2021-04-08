@@ -14,5 +14,11 @@ namespace Rito.InventorySystem
         public ArmorItemData ArmorData { get; private set; }
 
         public ArmorItem(ArmorItemData data) : base(data) { }
+
+        // TODO
+        public override bool Use()
+        {
+            return true;
+        }
     }
 }

@@ -41,21 +41,27 @@ namespace Rito.InventorySystem
         *                               Unity Events
         ***********************************************************************/
         #region .
-        // Awake()가 InventoryUI.Awake()보다 늦게 호출되면 미리 게임오브젝트가 꺼져서
-        // 호출되지 않을 수 있음
-
-        //private void Awake()
-        //{
-        //    TryGetComponent(out _rt);
-
-        //    // NOTE : 게임 시작 시 스스로 Hide()하지 않고, 인벤토리 UI에서 Hide()
-        //}
+        private void Awake()
+        {
+            Init();
+            Hide();
+        }
 
         #endregion
         /***********************************************************************
         *                               Private Methods
         ***********************************************************************/
         #region .
+        private void Init()
+        {
+            TryGetComponent(out _rt);
+            _rt.pivot = LeftTop;
+
+            _canvasScaler = GetComponentInParent<CanvasScaler>();
+
+            SetAllChildrenDisableRaycastTarget(transform);
+        }
+
         /// <summary> 모든 자식 UI에 레이캐스트 타겟 해제 </summary>
         private void SetAllChildrenDisableRaycastTarget(Transform tr)
         {
@@ -79,17 +85,6 @@ namespace Rito.InventorySystem
         *                               Public Methods
         ***********************************************************************/
         #region .
-        /// <summary> Awake() 대용 </summary>
-        public void Init()
-        {
-            TryGetComponent(out _rt);
-            _rt.pivot = LeftTop;
-
-            _canvasScaler = GetComponentInParent<CanvasScaler>();
-
-            SetAllChildrenDisableRaycastTarget(transform);
-        }
-
         /// <summary> 툴팁 UI에 아이템 정보 등록 </summary>
         public void SetItemInfo(ItemData data)
         {

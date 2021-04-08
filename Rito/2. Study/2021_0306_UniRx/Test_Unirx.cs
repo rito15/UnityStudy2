@@ -48,7 +48,13 @@ public class Test_Unirx : MonoBehaviour
         //CaptureWhenValueChanges();
         //RefineRapidlyChangingValue();
 
-        SubjectTest();
+        //SubjectTest();
+        //EventToStream();
+
+        //CoroutineToStream();
+        //TestObservables();
+
+        TestReactiveProperties();
     }
 
     private void UpdateDifferences()
@@ -346,5 +352,97 @@ public class Test_Unirx : MonoBehaviour
         strSubject.OnCompleted();
 
         strSubject.OnNext("C");
+    }
+
+    private UnityEngine.Events.UnityEvent MyEvent;
+    private void EventToStream()
+    {
+        MyEvent = new UnityEngine.Events.UnityEvent();
+
+        MyEvent
+            .AsObservable()
+            .Subscribe(_ => Debug.Log("Event Call"));
+
+        MyEvent.Invoke();
+        MyEvent.Invoke();
+    }
+
+    private void CoroutineToStream()
+    {
+        // [1] 코루틴을 스트림으로 변환한 경우
+        //   - 코루틴이 종료된 후에 OnNext(), OnCompleted() 호출됨
+
+        // 코루틴 변환 방법 1
+        TestRoutine()
+            .ToObservable()
+            .Subscribe(_ => Debug.Log("Next 1"), () => Debug.Log("Completed 1"));
+
+        // 코루틴 변환 방법 2
+        Observable.FromCoroutine(TestRoutine)
+            .Subscribe(_ => Debug.Log("Next 2"));
+
+        // [2] FromCoroutineValue<T>
+        //     : 코루틴에서 정수형 yield return 값 받아 사용하기
+
+        //   - 코루틴에서 yield return으로 값을 넘길 때마다 OnNext(T) 호출됨
+        //   - 값을 넘겨주는 경우에는 프레임이 넘어가지 않음
+
+        //   - WaitForSeconds(), null 등은 값을 넘겨주지 않고 프레임을 넘기는 역할만 수행
+        //   - 타입이 다른 값을 리턴하는 경우에 InvalidCastException 발생
+        //   - 코루틴이 종료된 후에 OnCompleted() 호출됨
+
+        Observable.FromCoroutineValue<int>(TestRoutine)
+            .Subscribe(x => Debug.Log("Next : " + x), () => Debug.Log("Completed 3"));
+    }
+    private IEnumerator TestRoutine()
+    {
+        Debug.Log("TestRoutine - 1");
+        yield return new WaitForSeconds(1.0f);
+
+        Debug.Log("TestRoutine - 2");
+        yield return Time.frameCount; // 여기부터
+        yield return 123;
+        yield return Time.frameCount; // 여기까지 같은 프레임
+        yield return null;
+        yield return Time.frameCount; // 프레임 넘어감
+        yield return 12.3;            // InvalidCastException
+    }
+
+    private void TestObservables()
+    {
+        // 매 프레임마다 OnNext()
+        Observable.EveryUpdate()
+            .Subscribe(_ => Debug.Log("Every Update"));
+
+        // 5부터 14까지 10번 OnNext()
+        Observable.Range(5, 10)
+            .Subscribe(x => Debug.Log($"Range : {x}"));
+
+        // 1초마다 OnNext()
+        Observable.Interval(TimeSpan.FromSeconds(1))
+            .Subscribe(_ => Debug.Log("Interval"));
+
+        // 2초 후 OnNext()
+        Observable.Timer(TimeSpan.FromSeconds(2))
+            .Subscribe(_ => Debug.Log("Timer"));
+    }
+
+    private ReactiveProperty<int> _intProperty = new ReactiveProperty<int>();
+    private IntReactiveProperty _intProperty2 = new IntReactiveProperty();
+
+    private void TestReactiveProperties()
+    {
+        // 값 초기화할 때마다 OnNext(int)
+        _intProperty
+            .Subscribe(x => Debug.Log(x));
+
+        // 5의 배수인 값이 초기화될 때마다 값을 10배로 증가시켜 OnNext(int)
+        _intProperty
+            .Where(x => x % 5 == 0)
+            .Select(x => x * 10)
+            .Subscribe(x => Debug.Log(x));
+
+        for(int i = 0; i <= 5; i++)
+            _intProperty.Value = i;
     }
 }

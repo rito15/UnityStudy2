@@ -40,10 +40,13 @@ using UnityEngine;
     - [o] 아이템끼리 슬롯 교체
     - [o] 마우스 올린 슬롯에 하이라이트 표시
     - [o] 마우스 올린 슬롯에 아이템이 있으면 툴팁 UI 표시
-    - 동일한 셀 수 있는 아이템끼리 드래그 앤 드롭할 경우 개수 합치기
-    - 셀 수 있는 아이템 개수 나누기(Shift 클릭, 나눌 개수 팝업으로 지정)
-    - 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
+    - [o] 아이템 사용하기
+        - 소비 아이템의 경우, 사용 성공 시 개수 하나 줄이기
+        - 사용을 통해 개수가 0이 되는 경우, 슬롯에서 제거
+    - [o] 동일한 셀 수 있는 아이템끼리 드래그 앤 드롭할 경우 개수 합치기
     - 빈칸 없이 정렬하기(타입에 따라)
+    - 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
+    - 셀 수 있는 아이템 개수 나누기(Shift 클릭, 나눌 개수 팝업으로 지정)
 */
 
 /*
@@ -213,7 +216,7 @@ namespace Rito.InventorySystem
                             CountableItem ci = _items[index] as CountableItem;
                             amount = ci.AddAmountAndGetExcess(amount);
 
-                            UpdateUI(index);
+                            UpdateSlot(index);
                         }
                     }
                     // 1-2. 빈 슬롯 탐색
@@ -229,10 +232,17 @@ namespace Rito.InventorySystem
                         // 빈 슬롯 발견 시, 슬롯에 아이템 추가 및 잉여량 계산
                         else
                         {
-                            _items[index] = new CountableItem(ciData, amount);
+                            // 새로운 아이템 생성
+                            CountableItem ci = ciData.CreateItem() as CountableItem;
+                            ci.SetAmount(amount);
+
+                            // 슬롯에 추가
+                            _items[index] = ci;
+
+                            // 남은 개수 계산
                             amount = (amount > ciData.MaxAmount) ? (amount - ciData.MaxAmount) : 0;
 
-                            UpdateUI(index);
+                            UpdateSlot(index);
                         }
                     }
                 }
@@ -246,11 +256,11 @@ namespace Rito.InventorySystem
                     index = FindEmptySlotIndex();
                     if (index != -1)
                     {
-                        // 아이템을 슬롯에 추가
-                        _items[index] = new Item(itemData);
+                        // 아이템을 생성하여 슬롯에 추가
+                        _items[index] = itemData.CreateItem();
                         amount = 0;
 
-                        UpdateUI(index);
+                        UpdateSlot(index);
                     }
                 }
 
@@ -267,10 +277,10 @@ namespace Rito.InventorySystem
                         break;
                     }
 
-                    // 아이템을 슬롯에 추가
-                    _items[index] = new Item(itemData);
+                    // 아이템을 생성하여 슬롯에 추가
+                    _items[index] = itemData.CreateItem();
 
-                    UpdateUI(index);
+                    UpdateSlot(index);
                 }
             }
 
@@ -296,72 +306,151 @@ namespace Rito.InventorySystem
             if(!IsValidIndex(indexA)) return;
             if(!IsValidIndex(indexB)) return;
 
-            // Swap
-            Item temp = _items[indexA];
-            _items[indexA] = _items[indexB];
-            _items[indexB] = temp;
+            Item itemA = _items[indexA];
+            Item itemB = _items[indexB];
 
-            // Update Both
-            UpdateUI(indexA);
-            UpdateUI(indexB);
+            // 1. 셀 수 있는 아이템이고, 동일한 아이템일 경우
+            //    indexA -> indexB로 개수 합치기
+            if (itemA != null && itemB != null &&
+                itemA.Data == itemB.Data &&
+                itemA is CountableItem ciA && itemB is CountableItem ciB)
+            {
+                int maxAmount = ciB.MaxAmount;
+                int sum = ciA.Amount + ciB.Amount;
+
+                if (sum <= maxAmount)
+                {
+                    ciA.SetAmount(0);
+                    ciB.SetAmount(sum);
+                }
+                else
+                {
+                    ciA.SetAmount(sum - maxAmount);
+                    ciB.SetAmount(maxAmount);
+                }
+            }
+            // 2. 일반적인 경우 : 슬롯 교체
+            else
+            {
+                _items[indexA] = itemB;
+                _items[indexB] = itemA;
+            }
+
+            // 두 슬롯 정보 갱신
+            UpdateSlot(indexA);
+            UpdateSlot(indexB);
         }
 
         /// <summary> 해당 슬롯의 아이템 사용 </summary>
         public void Use(int index)
         {
             if(!IsValidIndex(index)) return;
+            if(_items[index] == null) return;
 
             // 아이템 사용
+            bool succeeded = _items[index].Use();
 
-
-            // UI 제거
-            _inventoryUI.RemoveItem(index);
+            if (succeeded)
+            {
+                UpdateSlot(index);
+            }
         }
 
-        /// <summary> 해당하는 인덱스의 슬롯 상태를 UI에 갱신 </summary>
-        public void UpdateUI(int index)
+        /// <summary> 해당하는 인덱스의 슬롯 상태 및 UI 갱신 </summary>
+        public void UpdateSlot(int index)
         {
             if(!IsValidIndex(index)) return;
 
             Item item = _items[index];
 
-            // 아이템이 슬롯에 존재하는 경우 : 아이콘 등록
+            // 1. 아이템이 슬롯에 존재하는 경우
             if (item != null)
             {
-                _inventoryUI.SetItem(index, item.Data.IconSprite);
+                // 아이콘 등록
+                _inventoryUI.SetItemIcon(index, item.Data.IconSprite);
 
-                // 셀 수 있는 아이템이면 수량 텍스트 표시
+                // 1-1. 셀 수 있는 아이템
                 if (item is CountableItem ci)
                 {
-                    _inventoryUI.SetItemAmount(index, ci.Amount);
+                    // 1-1-1. 수량이 0인 경우, 아이템 제거
+                    if (ci.IsEmpty)
+                    {
+                        _items[index] = null;
+                        RemoveIcon();
+                    }
+                    // 1-1-2. 수량 텍스트 표시
+                    else
+                    {
+                        _inventoryUI.SetItemAmountText(index, ci.Amount);
+                    }
                 }
-                // 셀 수 없는 아이템인 경우 수량 : 1 (제거)
+                // 1-2. 셀 수 없는 아이템인 경우 수량 텍스트 제거
                 else
                 {
-                    _inventoryUI.SetItemAmount(index, 1);
+                    _inventoryUI.HideItemAmountText(index);
                 }
             }
-            // 빈 슬롯인 경우 : 아이콘 제거
+            // 2. 빈 슬롯인 경우 : 아이콘 제거
             else
             {
+                RemoveIcon();
+            }
+
+            // 로컬 : 아이콘 제거하기
+            void RemoveIcon()
+            {
                 _inventoryUI.RemoveItem(index);
-                _inventoryUI.SetItemAmount(index, -1); // 수량 텍스트 제거
+                _inventoryUI.HideItemAmountText(index); // 수량 텍스트 숨기기
             }
         }
 
-        /// <summary> 해당하는 인덱스의 슬롯들을 UI에 갱신 </summary>
-        public void UpdateUI(params int[] indices)
+        /// <summary> 해당하는 인덱스의 슬롯들의 상태 및 UI 갱신 </summary>
+        public void UpdateSlot(params int[] indices)
         {
             foreach (var i in indices)
             {
-                UpdateUI(i);
+                UpdateSlot(i);
             }
         }
 
-        /// <summary> 모든 슬롯 UI에 접근 가능 여부 설정 </summary>
+        /// <summary> 모든 슬롯들의 상태를 UI에 갱신 </summary>
+        public void UpdateAllSlot()
+        {
+            for (int i = 0; i < Capacity; i++)
+            {
+                UpdateSlot(i);
+            }
+        }
+
+        /// <summary> 모든 슬롯 UI에 접근 가능 여부 업데이트 </summary>
         public void UpdateAccessibleStatesAll()
         {
             _inventoryUI.SetAccessibleSlotRange(Capacity);
+        }
+
+        /// <summary> 빈 슬롯 없이 앞에서부터 채우기 </summary>
+        public void TrimAll()
+        {
+            List<Item> itemList = new List<Item>(Capacity);
+
+            // 1. 비어있지 않은 슬롯 조사
+            for (int i = 0; i < Capacity; i++)
+            {
+                if(_items[i] != null)
+                    itemList.Add(_items[i]);
+            }
+
+            // 2. 앞에서부터 채우기
+            for (int i = 0; i < Capacity; i++)
+            {
+                if(i < itemList.Count)
+                    _items[i] = itemList[i];
+                else
+                    _items[i] = null;
+            }
+
+            // 3. 모든 슬롯 갱신
+            UpdateAllSlot();
         }
 
         /// <summary> 해당 슬롯의 아이템 정보 넘겨주기 </summary>

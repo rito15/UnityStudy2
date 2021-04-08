@@ -16,5 +16,9 @@ namespace Rito.InventorySystem
         public int Defence => _defence;
 
         [SerializeField] private int _defence = 1;
+        public override Item CreateItem()
+        {
+            return new ArmorItem(this);
+        }
     }
 }

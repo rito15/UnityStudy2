@@ -14,5 +14,14 @@ namespace Rito.InventorySystem
         public PortionItemData PortionData { get; private set; }
 
         public PortionItem(PortionItemData data, int amount = 1) : base(data, amount) { }
+
+        // TODO
+        public override bool Use()
+        {
+            // 임시 : 개수 하나 감소
+            Amount--;
+
+            return true;
+        }
     }
 }

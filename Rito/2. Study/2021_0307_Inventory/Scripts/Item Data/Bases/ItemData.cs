@@ -9,6 +9,18 @@ using UnityEngine.UI;
 
 namespace Rito.InventorySystem
 {
+    /*
+        [상속 구조]
+
+        ItemData(abstract)
+            - CountableItemData(abstract)
+                - PortionItemData
+            - EquipmentItemData(abstract)
+                - WeaponItemData
+                - ArmorItemData
+
+    */
+
     public abstract class ItemData : ScriptableObject
     {
         public int ID => _id;

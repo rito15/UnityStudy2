@@ -54,7 +54,8 @@ public class Test_Unirx : MonoBehaviour
         //CoroutineToStream();
         //TestObservables();
 
-        TestReactiveProperties();
+        //TestReactiveProperties();
+        TestFilters();
     }
 
     private void UpdateDifferences()
@@ -444,5 +445,56 @@ public class Test_Unirx : MonoBehaviour
 
         for(int i = 0; i <= 5; i++)
             _intProperty.Value = i;
+    }
+
+    private void TestFilters()
+    {
+        var leftMouseDown =
+            Observable.EveryUpdate()
+                .Where(_ => Input.GetMouseButtonDown(0));
+
+        var rightMouseDown =
+            Observable.EveryUpdate()
+                .Where(_ => Input.GetMouseButtonDown(1));
+        //====================================================================
+
+        leftMouseDown
+            .ThrottleFirst(TimeSpan.FromMilliseconds(1000))
+            //.Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        leftMouseDown
+            .Take(5)
+            //.Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        leftMouseDown
+            .TakeUntil(rightMouseDown)
+            //.Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        // 좌클릭할 때 우클릭이 유지된 상태면 OnNext(),
+        // 우클릭이 안된 상태에서 좌클릭만 하면 OnCompleted()
+        leftMouseDown
+            .TakeWhile(_ => Input.GetMouseButton(1))
+            //.Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        leftMouseDown
+            .TakeLast(5)
+            .TakeUntil(rightMouseDown)
+            .Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        leftMouseDown
+            //.Skip(10)
+            .Skip(TimeSpan.FromMilliseconds(1000))
+            //.Subscribe(_ => Debug.Log("Click"), ()=> Debug.Log("Completed"))
+            ;
+
+        leftMouseDown
+            .SkipUntil(rightMouseDown)
+            //.Subscribe(a => Debug.Log("Click" + a), ()=> Debug.Log("Completed"))
+            ;
     }
 }

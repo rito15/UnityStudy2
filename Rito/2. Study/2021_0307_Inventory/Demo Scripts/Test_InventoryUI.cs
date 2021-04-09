@@ -14,7 +14,9 @@ public class Test_InventoryUI : MonoBehaviour
 
     public ItemData[] _itemDataArray;
     
+    [Space(12)]
     public Button _trimButton;
+    public Button _sortButton;
 
     private void Start()
     {
@@ -30,6 +32,7 @@ public class Test_InventoryUI : MonoBehaviour
         }
 
         _trimButton.onClick.AddListener(_inventory.TrimAll);
+        _sortButton.onClick.AddListener(_inventory.SortAll);
     }
 
 }

@@ -28,10 +28,16 @@ namespace Rito.InventorySystem
 {
     public class InventoryUI : MonoBehaviour
     {
+        /// <summary> 인벤토리 UI 내 아이템 필터링 옵션 </summary>
+        public enum FilterOption
+        {
+            All, Equipment, Portion
+        }
         /***********************************************************************
         *                               Option Fields
         ***********************************************************************/
         #region .
+        [Header("Options")]
         [Range(0, 10)]
         [SerializeField] private int _slotCountPerLine = 8;  // 한 줄 당 슬롯 개수
         [Range(0, 10)]
@@ -41,13 +47,22 @@ namespace Rito.InventorySystem
         [Range(32, 64)]
         [SerializeField] private float _slotSize = 64f;      // 각 슬롯의 크기
 
-        [Space]
+        [Header("Connected Objects")]
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
         [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
         [SerializeField] private ItemTooltipUI _itemTooltip;   // 아이템 정보를 보여줄 툴팁 UI
         [SerializeField] private GameObject _barrierGO;        // 클릭 방지 UI
 
-        [Space]
+        [Header("Buttons")]
+        [SerializeField] private Button _trimButton;
+        [SerializeField] private Button _sortButton;
+
+        [Header("Filter Toggles")]
+        [SerializeField] private Toggle _toggleFilterAll;
+        [SerializeField] private Toggle _toggleFilterEquipments;
+        [SerializeField] private Toggle _toggleFilterPortions;
+
+        [Space(16)]
         [SerializeField] private bool _mouseReversed = false; // 마우스 클릭 반전 여부
 
         #endregion
@@ -75,6 +90,8 @@ namespace Rito.InventorySystem
         private Vector3 _beginDragCursorPoint; // 드래그 시작 시 커서의 위치
         private int _beginDragSlotSiblingIndex;
 
+        private FilterOption _currentFilterOption = FilterOption.All;
+
         #endregion
         /***********************************************************************
         *                               Unity Events
@@ -84,6 +101,8 @@ namespace Rito.InventorySystem
         {
             Init();
             InitSlots();
+            InitButtonEvents();
+            InitToggleEvents();
         }
 
         private void Update()
@@ -139,7 +158,7 @@ namespace Rito.InventorySystem
 
             _slotUIList = new List<ItemSlotUI>(_slotLineCount * _slotCountPerLine);
 
-            // Init Slot Grid
+            // 슬롯들 생성
             for (int j = 0; j < _slotLineCount; j++)
             {
                 for (int i = 0; i < _slotCountPerLine; i++)
@@ -165,14 +184,51 @@ namespace Rito.InventorySystem
                 curPos.y -= (_slotMargin + _slotSize);
             }
 
+            // 슬롯 프리팹 파괴
+            Destroy(_slotUiPrefab);
+
             RectTransform CloneSlot()
             {
                 GameObject slotGo = Instantiate(_slotUiPrefab);
                 RectTransform rt = slotGo.GetComponent<RectTransform>();
-                rt.transform.SetParent(_contentAreaRT.transform);
+                rt.SetParent(_contentAreaRT);
 
                 return rt;
             }
+        }
+
+        private void InitButtonEvents()
+        {
+            _trimButton.onClick.AddListener(() => _inventory.TrimAll());
+            _sortButton.onClick.AddListener(() => _inventory.SortAll());
+        }
+
+        private void InitToggleEvents()
+        {
+            _toggleFilterAll.onValueChanged.AddListener(value =>
+            {
+                if (value)
+                {
+                    _currentFilterOption = FilterOption.All;
+                    UpdateAllSlotFilters();
+                }
+            });
+            _toggleFilterEquipments.onValueChanged.AddListener(value =>
+            {
+                if (value)
+                {
+                    _currentFilterOption = FilterOption.Equipment;
+                    UpdateAllSlotFilters();
+                }
+            });
+            _toggleFilterPortions.onValueChanged.AddListener(value =>
+            {
+                if (value)
+                {
+                    _currentFilterOption = FilterOption.Portion;
+                    UpdateAllSlotFilters();
+                }
+            });
         }
 
         #endregion
@@ -237,7 +293,7 @@ namespace Rito.InventorySystem
             {
                 curSlot.Highlight(true);
 
-                if (curSlot.HasItem)
+                if (curSlot.HasItem && curSlot.IsAccessible)
                 {
                     EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
 
@@ -277,7 +333,7 @@ namespace Rito.InventorySystem
                 _beginDragSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
 
                 // 아이템을 갖고 있는 슬롯만 해당
-                if (_beginDragSlot != null && _beginDragSlot.HasItem)
+                if (_beginDragSlot != null && _beginDragSlot.HasItem && _beginDragSlot.IsAccessible)
                 {
                     EditorLog($"Drag Begin : Slot [{_beginDragSlot.Index}]");
 
@@ -301,7 +357,7 @@ namespace Rito.InventorySystem
             {
                 ItemSlotUI slot = RaycastAndGetFirstComponent<ItemSlotUI>();
 
-                if (slot != null && slot.HasItem)
+                if (slot != null && slot.HasItem && slot.IsAccessible)
                 {
                     TryUseItem(slot.Index);
                 }
@@ -346,12 +402,8 @@ namespace Rito.InventorySystem
             ItemSlotUI endDragSlot = RaycastAndGetFirstComponent<ItemSlotUI>();
 
             // 아이템 슬롯끼리 아이콘 교환 또는 이동
-            if (endDragSlot != null)
+            if (endDragSlot != null && endDragSlot.IsAccessible)
             {
-                //EditorLog((_beginDragSlot == endDragSlot) ?
-                //    $"Drag End(Same Slot) : [{_beginDragSlot.Index}]" : 
-                //    $"Drag End({(endDragSlot.HasItem ? "Swap" : "Move")}) : Slot [{_beginDragSlot.Index} -> {endDragSlot.Index}]");
-
                 TrySwapItems(_beginDragSlot, endDragSlot);
 
                 // 툴팁 갱신
@@ -362,8 +414,6 @@ namespace Rito.InventorySystem
             // 버리기(커서가 UI 레이캐스트 타겟 위에 있지 않은 경우)
             if (!IsOverUI())
             {
-                //EditorLog($"Drag End(Remove) : Slot [{_beginDragSlot.Index}]");
-
                 TryRemoveItem(_beginDragSlot.Index);
             }
             // 슬롯이 아닌 다른 UI 위에 놓은 경우
@@ -482,7 +532,39 @@ namespace Rito.InventorySystem
         {
             for (int i = 0; i < _slotUIList.Count; i++)
             {
-                _slotUIList[i].SetAccessibleState(i < accessibleSlotCount);
+                _slotUIList[i].SetSlotAccessibleState(i < accessibleSlotCount);
+            }
+        }
+
+        /// <summary> 모든 아이템 필터 상태 업데이트 </summary>
+        public void UpdateAllSlotFilters()
+        {
+            bool[] filterMarks;
+            int capacity = _inventory.Capacity;
+
+            // 아이템 타입에 따라 필터 상태 배열 초기화
+            switch (_currentFilterOption)
+            {
+                default:
+                case FilterOption.All:
+                    filterMarks = new bool[capacity];
+                    for (int i = 0; i < capacity; i++)
+                        filterMarks[i] = true;
+                    break;
+
+                case FilterOption.Equipment:
+                    filterMarks = _inventory.GetFilterMarkArray<EquipmentItemData>();
+                    break;
+
+                case FilterOption.Portion:
+                    filterMarks = _inventory.GetFilterMarkArray<PortionItemData>();
+                    break;
+            }
+
+            // 모든 슬롯에 적용
+            for (int i = 0; i < capacity; i++)
+            {
+                _slotUIList[i].SetItemAccessibleState(filterMarks[i]);
             }
         }
 
@@ -492,7 +574,7 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
 #if UNITY_EDITOR
-        [Space]
+        [Header("Editor Options")]
         [SerializeField] private bool _showDebug = true;
 #endif
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -508,7 +590,6 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
 #if UNITY_EDITOR
-        [Header("Editor Only")]
         [SerializeField] private bool __showPreview = false;
 
         [Range(0.01f, 1f)]

@@ -47,7 +47,7 @@ namespace Rito.InventorySystem
         public bool HasItem => _iconImage.sprite != null;
 
         /// <summary> 접근 가능한 슬롯인지 여부 </summary>
-        public bool IsAccessible { get; private set; } = true;
+        public bool IsAccessible => _isAccessibleSlot && _isAccessibleItem;
 
         public RectTransform SlotRect => _slotRect;
         public RectTransform IconRect => _iconRect;
@@ -69,10 +69,16 @@ namespace Rito.InventorySystem
 
         private Image _slotImage;
 
+        // 하이라이트 알파값
         private float _currentHLAlpha = 0f;
 
+        private bool _isAccessibleSlot = true; // 슬롯 접근가능 여부
+        private bool _isAccessibleItem = true; // 아이템 접근가능 여부
+
         /// <summary> 비활성화된 슬롯의 색상 </summary>
-        private static readonly Color DisabledSlotColor = new Color(0.2f, 0.2f, 0.2f, 1.0f);
+        private static readonly Color InaccessibleSlotColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+        /// <summary> 비활성화된 아이콘 색상 </summary>
+        private static readonly Color InaccessibleIconColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
 
         #endregion
         /***********************************************************************
@@ -148,11 +154,11 @@ namespace Rito.InventorySystem
 
         public void SetSlotIndex(int index) => Index = index;
 
-        /// <summary> 접근 가능/불가능 여부 설정 </summary>
-        public void SetAccessibleState(bool value)
+        /// <summary> 슬롯 자체의 활성화/비활성화 여부 설정 </summary>
+        public void SetSlotAccessibleState(bool value)
         {
-            // 이미 처리가 완료된 슬롯이면 중복 처리 X
-            if(value == IsAccessible) return;
+            // 중복 처리는 지양
+            if (_isAccessibleSlot == value) return;
 
             if (value)
             {
@@ -160,12 +166,32 @@ namespace Rito.InventorySystem
             }
             else
             {
-                _slotImage.color = DisabledSlotColor;
+                _slotImage.color = InaccessibleSlotColor;
                 HideIcon();
                 HideText();
             }
 
-            IsAccessible = value;
+            _isAccessibleSlot = value;
+        }
+
+        /// <summary> 아이템 활성화/비활성화 여부 설정 </summary>
+        public void SetItemAccessibleState(bool value)
+        {
+            // 중복 처리는 지양
+            if(_isAccessibleItem == value) return;
+
+            if (value)
+            {
+                _iconImage.color = Color.white;
+                _amountText.color = Color.white;
+            }
+            else
+            {
+                _iconImage.color = InaccessibleIconColor;
+                _amountText.color = InaccessibleIconColor;
+            }
+
+            _isAccessibleItem = value;
         }
 
         /// <summary> 다른 슬롯과 아이템 아이콘 교환 </summary>
@@ -190,7 +216,7 @@ namespace Rito.InventorySystem
         /// <summary> 슬롯에 아이템 등록 </summary>
         public void SetItem(Sprite itemSprite)
         {
-            if (!this.IsAccessible) return;
+            //if (!this.IsAccessible) return;
 
             if (itemSprite != null)
             {
@@ -222,7 +248,7 @@ namespace Rito.InventorySystem
         /// <summary> 아이템 개수 텍스트 설정(amount가 1 이하일 경우 텍스트 미표시) </summary>
         public void SetItemAmount(int amount)
         {
-            if (!this.IsAccessible) return;
+            //if (!this.IsAccessible) return;
 
             if (HasItem && amount > 1)
                 ShowText();

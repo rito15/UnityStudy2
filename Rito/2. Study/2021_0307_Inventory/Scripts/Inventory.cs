@@ -32,20 +32,20 @@ using UnityEngine;
     - [o] 셀 수 있는 아이템은 텍스트로 개수 표시
     - [o] 아이템 이미지 드래그 앤 드롭
     - [o] 아이템 습득
-        - 아이템 컨테이너 프리팹으로부터 습득
+        - 아이템 컨테이너 프리팹으로부터 습득                 -- TODO
     - [o] 아이템 버리기
-        - 버리려고 할 때 팝업으로 물어보기
-        - 버리는데 성공하면 아이템 컨테이너 프리팹 생성
+        - 버리려고 할 때 팝업으로 물어보기                    -- TODO
+        - 버리는데 성공하면 아이템 컨테이너 프리팹 생성       -- TODO
     - [o] 아이템끼리 슬롯 교체
     - [o] 마우스 올린 슬롯에 하이라이트 표시
     - [o] 마우스 올린 슬롯에 아이템이 있으면 툴팁 UI 표시
     - [o] 아이템 사용하기
-        - 소비 아이템의 경우, 사용 성공 시 개수 하나 줄이기
-        - 사용을 통해 개수가 0이 되는 경우, 슬롯에서 제거
+        - [o] 소비 아이템의 경우, 사용 성공 시 개수 하나 줄이기
+        - [o] 사용을 통해 개수가 0이 되는 경우, 슬롯에서 제거
     - [o] 동일한 셀 수 있는 아이템끼리 드래그 앤 드롭할 경우 개수 합치기
     - [o] 앞에서부터 슬롯 빈 칸 채우기(Trim)
     - [o] 앞에서부터 빈칸 없이 정렬하기(타입에 따라)
-    - 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
+    - [o] 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
     - 셀 수 있는 아이템 개수 나누기(Shift 클릭, 나눌 개수 팝업으로 지정)
 */
 
@@ -457,39 +457,8 @@ namespace Rito.InventorySystem
 
             // 3. 모든 슬롯 갱신
             UpdateAllSlot();
+            _inventoryUI.UpdateAllSlotFilters(); // 필터 상태 업데이트
         }
-
-        ///// <summary> 빈 슬롯 없이 채우면서 아이템 종류별로 정렬하기 </summary>
-        //public void SortAll()
-        //{
-        //    int count = 0;
-        //    int current = 0;
-
-        //    // 1. 비어있지 않은 아이템들만 리스트로 담아오기
-        //    for (int i = 0; i < Capacity; i++)
-        //        if (_items[i] != null)
-        //            count++;
-
-        //    Item[] tmp = new Item[count];
-
-        //    for (int i = 0; i < Capacity; i++)
-        //        if (_items[i] != null)
-        //            tmp[current++] = _items[i];
-
-        //    // 2. 미리 정한 가중치를 이용해 리스트 정렬
-        //    Array.Sort(tmp, (a, b) =>
-        //          a.Data.ID * _sortingWeightMap[a.Data.GetType()] 
-        //        - b.Data.ID * _sortingWeightMap[b.Data.GetType()]
-        //    );
-
-        //    // 3. 리스트의 아이템을 배열로 복원
-        //    for (int i = 0; i < Capacity; i++)
-        //    {
-        //        _items[i] = (i < count) ? tmp[i] : null;
-        //    }
-
-        //    UpdateAllSlot();
-        //}
 
         /// <summary> 빈 슬롯 없이 채우면서 아이템 종류별로 정렬하기 </summary>
         public void SortAll()
@@ -516,6 +485,21 @@ namespace Rito.InventorySystem
             }
 
             UpdateAllSlot();
+            _inventoryUI.UpdateAllSlotFilters(); // 필터 상태 업데이트
+        }
+
+        /// <summary> 활성 슬롯들 중 특정 타입의 아이템은 true, 다른 아이템들은 false로 표시한 배열 리턴 </summary>
+        public bool[] GetFilterMarkArray<T>() where T : ItemData
+        {
+            bool[] markArray = new bool[Capacity];
+
+            for (int i = 0; i < Capacity; i++)
+            {
+                // null이면 필터에 포함
+                markArray[i] = (_items[i] == null || _items[i].Data is T);
+            }
+
+            return markArray;
         }
 
         /// <summary> 해당 슬롯의 아이템 정보 넘겨주기 </summary>

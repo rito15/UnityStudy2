@@ -55,7 +55,8 @@ public class Test_Unirx : MonoBehaviour
         //TestObservables();
 
         //TestReactiveProperties();
-        TestFilters();
+        //TestFilters();
+        TestCombinations();
     }
 
     private void UpdateDifferences()
@@ -411,21 +412,44 @@ public class Test_Unirx : MonoBehaviour
 
     private void TestObservables()
     {
-        // 매 프레임마다 OnNext()
-        Observable.EveryUpdate()
-            .Subscribe(_ => Debug.Log("Every Update"));
+        //// Empty : OnCompleted()를 즉시 전달
+        //Observable.Empty<Unit>()
+        //    .Subscribe(x => Debug.Log("Next"), () => Debug.Log("Completed"));
 
-        // 5부터 14까지 10번 OnNext()
-        Observable.Range(5, 10)
-            .Subscribe(x => Debug.Log($"Range : {x}"));
+        //// Return : 한 개의 메시지만 전달
+        //Observable.Return(2.5f)
+        //    .Subscribe(x => Debug.Log("value : " + x));
 
-        // 1초마다 OnNext()
-        Observable.Interval(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => Debug.Log("Interval"));
+        //// Range(a, b) : a부터 (a + b - 1)까지 b번 OnNext()
+        //// 5부터 14까지 10번 OnNext()
+        //Observable.Range(5, 10)
+        //    .Subscribe(x => Debug.Log($"Range : {x}"));
 
-        // 2초 후 OnNext()
-        Observable.Timer(TimeSpan.FromSeconds(2))
-            .Subscribe(_ => Debug.Log("Timer"));
+        //// Interval : 지정한 시간 간격마다 OnNext()
+        //Observable.Interval(TimeSpan.FromSeconds(1))
+        //    .Subscribe(_ => Debug.Log("Interval"));
+
+        //// Timer : 지정한 시간 이후에 OnNext()
+        //Observable.Timer(TimeSpan.FromSeconds(2))
+        //    .Subscribe(_ => Debug.Log("Timer"));
+
+        //// EveryUpdate : 매 프레임마다 OnNext()
+        //Observable.EveryUpdate()
+        //    .Subscribe(_ => Debug.Log("Every Update"));
+        
+        // Start : 무거운 작업을 병렬로 처리할 때 사용된다.
+        //         멀티스레딩으로 동작한다.
+        Debug.Log($"Frame : {Time.frameCount}");
+        Observable.Start(() =>
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(2000));
+            MainThreadDispatcher.Post(_ => Debug.Log($"Frame : {Time.frameCount}"), new object());
+            return Thread.CurrentThread.ManagedThreadId;
+        })
+            .Subscribe(
+                id => Debug.Log($"Finished : {id}"),
+                err => Debug.Log(err)
+            );
     }
 
     private ReactiveProperty<int> _intProperty = new ReactiveProperty<int>();
@@ -496,5 +520,48 @@ public class Test_Unirx : MonoBehaviour
             .SkipUntil(rightMouseDown)
             //.Subscribe(a => Debug.Log("Click" + a), ()=> Debug.Log("Completed"))
             ;
+
+    }
+
+    private void TestCombinations()
+    {
+        var leftMouseDownStream = this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(0));
+        var rightMouseDownStream = this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(1));
+
+        // Scan : 이전 메시지와 현재 메시지를 합성
+        leftMouseDownStream
+            .Select(_ => 5)
+            .Scan((a, b) => a + b)
+            //.Subscribe(x => Debug.Log($"Scan : {x}"))
+            ;
+
+        // Buffer : 지정한 횟수 또는 시간에 도달할 때까지 값을 누적하고
+        //          도달 시 리스트 형태로 OnNext()
+        //leftMouseDownStream
+        //    .Select(_ => Time.frameCount)
+        //    .Buffer(TimeSpan.FromSeconds(2))
+        //    .Subscribe(list =>
+        //    {
+        //        foreach (var x in list)
+        //        {
+        //            Debug.Log(x);
+        //        }
+        //    });
+
+        leftMouseDownStream
+            .Select(_ => 1)
+            .Scan((a, b) => a + b)
+            //.Zip
+            .ZipLatest
+            //.CombineLatest
+            (
+                rightMouseDownStream
+                    .Select(_ => 1)
+                    .Scan((a, b) => a + b), 
+                (a, b) => $"Left[{a}], Right[{b}]"
+            )
+            .Subscribe(x => Debug.Log(x));
     }
 }

@@ -9,6 +9,7 @@ using UniRx;
 using UniRx.Triggers;
 
 using Rito.UnityLibrary.Tester;
+using Rito.UniRx;
 using Debug = Rito.UnityLibrary.Debug;
 
 
@@ -47,6 +48,7 @@ public class Test_Unirx : MonoBehaviour
         //UpdateDifferences();
         //CaptureWhenValueChanges();
         //RefineRapidlyChangingValue();
+        //ObserveKeepMousePress();
 
         //SubjectTest();
         //EventToStream();
@@ -57,6 +59,9 @@ public class Test_Unirx : MonoBehaviour
         //TestReactiveProperties();
         //TestFilters();
         TestCombinations();
+
+
+        //TestCustomObservables();
     }
 
     private void UpdateDifferences()
@@ -334,6 +339,25 @@ public class Test_Unirx : MonoBehaviour
             .Subscribe(x => _isGroundedRefined = x);
     }
 
+    // 마우스 클릭 유지 관찰
+    private void ObserveKeepMousePress()
+    {
+        // 시작 트리거
+        var beginStream = this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(0));
+
+        // 종료 트리거
+        var endStream = this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonUp(0));
+
+        // 시작~종료 트리거 사이에서 매 프레임 OnNext()
+        this.UpdateAsObservable()
+            .SkipUntil(beginStream)
+            .TakeUntil(endStream)
+            .RepeatUntilDisable(this)
+            .Subscribe(_ => Debug.Log("Press"));
+    }
+
     private void SubjectTest()
     {
         Subject<string> strSubject = new Subject<string>();
@@ -525,13 +549,45 @@ public class Test_Unirx : MonoBehaviour
 
     private void TestCombinations()
     {
-        var leftMouseDownStream = this.UpdateAsObservable()
+        var leftDownStream = this.UpdateAsObservable()
             .Where(_ => Input.GetMouseButtonDown(0));
-        var rightMouseDownStream = this.UpdateAsObservable()
+        var rightDownStream = this.UpdateAsObservable()
             .Where(_ => Input.GetMouseButtonDown(1));
 
+        // 좌클릭 수 누적 스트림
+        var leftDownCountStream = 
+            leftDownStream
+            .Select(_ => 1)
+            .Scan((a, b) => a + b);
+
+        // 우클릭 수 누적 스트림
+        var rightDownCountStream = 
+            rightDownStream
+            .Select(_ => 1)
+            .Scan((a, b) => a + b);
+
+        // 좌클릭 : Down -> Up 일회성 스트림
+        var leftClickStream =
+            this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(0))
+            .TakeUntil(
+                this.UpdateAsObservable()
+                .Where(_ => Input.GetMouseButtonUp(0))
+            );
+
+        // 우클릭 : Down -> Up 일회성 스트림
+        var rightClickStream =
+            this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(1))
+            .TakeUntil(
+                this.UpdateAsObservable()
+                .Where(_ => Input.GetMouseButtonUp(1))
+            );
+
+        // =======================================================================
+
         // Scan : 이전 메시지와 현재 메시지를 합성
-        leftMouseDownStream
+        leftDownStream
             .Select(_ => 5)
             .Scan((a, b) => a + b)
             //.Subscribe(x => Debug.Log($"Scan : {x}"))
@@ -550,18 +606,46 @@ public class Test_Unirx : MonoBehaviour
         //        }
         //    });
 
-        leftMouseDownStream
-            .Select(_ => 1)
-            .Scan((a, b) => a + b)
+        leftDownCountStream
             //.Zip
-            .ZipLatest
+            //.ZipLatest
             //.CombineLatest
+            .WithLatestFrom
             (
-                rightMouseDownStream
-                    .Select(_ => 1)
-                    .Scan((a, b) => a + b), 
+                rightDownCountStream, 
                 (a, b) => $"Left[{a}], Right[{b}]"
             )
-            .Subscribe(x => Debug.Log(x));
+            //.Subscribe(x => Debug.Log(x))
+            ;
+
+        leftDownCountStream
+            .Amb(rightDownCountStream)
+            //.Subscribe(x => Debug.Log(x))
+            ;
+
+        leftDownCountStream
+            .Pairwise()
+            //.Subscribe(pair => Debug.Log($"{pair.Previous}, {pair.Current}"))
+            ;
+
+        leftDownCountStream
+            .Buffer(2, 3)
+            //.Subscribe(x => Debug.Log($"{x[0]}, {x[1]}"))
+            ;
+
+        leftDownStream.Merge(rightDownStream)
+            //.Subscribe(_ => Debug.Log("Left or Right Click"))
+            ;
+
+        leftClickStream.Concat(rightClickStream)
+            .Subscribe(_ => Debug.Log("Left or Right Click"));
+    }
+
+
+
+    private void TestCustomObservables()
+    {
+        CustomObservables.Instance.MouseDoubleClickAsObservable
+            .Subscribe(_ => Debug.Log("D C"));
     }
 }

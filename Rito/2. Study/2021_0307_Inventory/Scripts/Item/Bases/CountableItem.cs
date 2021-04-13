@@ -47,5 +47,19 @@ namespace Rito.InventorySystem
             return (nextAmount > MaxAmount) ? (nextAmount - MaxAmount) : 0;
         }
 
+        /// <summary> 개수를 나누어 복제 </summary>
+        public CountableItem SeperateAndClone(int amount)
+        {
+            // 수량이 한개 이하일 경우, 복제 불가
+            if(Amount <= 1) return null;
+
+            if(amount > Amount - 1)
+                amount = Amount - 1;
+
+            Amount -= amount;
+            return Clone(amount);
+        }
+
+        protected abstract CountableItem Clone(int amount);
     }
 }

@@ -51,7 +51,7 @@ namespace Rito.InventorySystem
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
         [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
         [SerializeField] private ItemTooltipUI _itemTooltip;   // 아이템 정보를 보여줄 툴팁 UI
-        [SerializeField] private GameObject _barrierGO;        // 클릭 방지 UI
+        [SerializeField] private InventoryPopupManager _popup;      // 팝업 UI 관리 객체
 
         [Header("Buttons")]
         [SerializeField] private Button _trimButton;
@@ -404,7 +404,33 @@ namespace Rito.InventorySystem
             // 아이템 슬롯끼리 아이콘 교환 또는 이동
             if (endDragSlot != null && endDragSlot.IsAccessible)
             {
-                TrySwapItems(_beginDragSlot, endDragSlot);
+                // 수량 나누기 조건
+                // 1) 마우스 클릭 떼는 순간 좌측 Ctrl 또는 Shift 키 유지
+                // 2) begin : 셀 수 있는 아이템 / end : 비어있는 슬롯
+                // 3) begin 아이템의 수량 > 1
+                bool isSeparatable = 
+                    (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftShift)) &&
+                    (_inventory.IsCountableItem(_beginDragSlot.Index) && !_inventory.HasItem(endDragSlot.Index));
+
+                // 1. 개수 나누기
+                if (isSeparatable)
+                {
+                    int currentAmount = _inventory.GetCurrentAmount(_beginDragSlot.Index);
+                    if (currentAmount > 1)
+                    {
+                        TrySeparateAmount(_beginDragSlot.Index, endDragSlot.Index, currentAmount);
+                    }
+                    else
+                    {
+                        // 수량을 나눌 수 없는 경우 : 교환 또는 이동
+                        TrySwapItems(_beginDragSlot, endDragSlot);
+                    }
+                }
+                // 2. 교환 또는 이동
+                else
+                {
+                    TrySwapItems(_beginDragSlot, endDragSlot);
+                }
 
                 // 툴팁 갱신
                 UpdateTooltipUI(endDragSlot);
@@ -414,7 +440,9 @@ namespace Rito.InventorySystem
             // 버리기(커서가 UI 레이캐스트 타겟 위에 있지 않은 경우)
             if (!IsOverUI())
             {
-                TryRemoveItem(_beginDragSlot.Index);
+                // 확인 팝업 띄우고 콜백 위임
+                int index = _beginDragSlot.Index;
+                _popup.OpenConfirmationPopup(() => TryRemoveItem(index));
             }
             // 슬롯이 아닌 다른 UI 위에 놓은 경우
             else
@@ -458,6 +486,22 @@ namespace Rito.InventorySystem
 
             from.SwapOrMoveIcon(to);
             _inventory.Swap(from.Index, to.Index);
+        }
+
+        private void TrySeparateAmount(int indexA, int indexB, int amount)
+        {
+            if (indexA == indexB)
+            {
+                EditorLog($"UI - Try Separate Amount: Same Slot [{indexA}]");
+                return;
+            }
+
+            EditorLog($"UI - Try Separate Amount: Slot [{indexA} -> {indexB}]");
+
+            _popup.OpenAmountInputPopup(
+                amt => _inventory.SeparateAmount(indexA, indexB, amt),
+                amount
+            );
         }
 
         /// <summary> 툴팁 UI의 슬롯 데이터 갱신 </summary>

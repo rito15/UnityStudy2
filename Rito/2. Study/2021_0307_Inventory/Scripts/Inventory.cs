@@ -34,7 +34,7 @@ using UnityEngine;
     - [o] 아이템 습득
         - 아이템 컨테이너 프리팹으로부터 습득                 -- TODO
     - [o] 아이템 버리기
-        - 버리려고 할 때 팝업으로 물어보기                    -- TODO
+        - [o]버리려고 할 때 팝업으로 물어보기
         - 버리는데 성공하면 아이템 컨테이너 프리팹 생성       -- TODO
     - [o] 아이템끼리 슬롯 교체
     - [o] 마우스 올린 슬롯에 하이라이트 표시
@@ -46,7 +46,7 @@ using UnityEngine;
     - [o] 앞에서부터 슬롯 빈 칸 채우기(Trim)
     - [o] 앞에서부터 빈칸 없이 정렬하기(타입에 따라)
     - [o] 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
-    - 셀 수 있는 아이템 개수 나누기(Shift 클릭, 나눌 개수 팝업으로 지정)
+    - 셀 수 있는 아이템 개수 나누기(Shift/Ctrl + Drag, 나눌 개수 팝업으로 지정)
 */
 
 /*
@@ -189,6 +189,36 @@ namespace Rito.InventorySystem
         {
             _inventoryUI = inventoryUI;
             _inventoryUI.SetInventoryReference(this);
+        }
+
+        /// <summary> 해당 슬롯이 아이템을 갖고 있는지 여부 </summary>
+        public bool HasItem(int index)
+        {
+            return IsValidIndex(index) && _items[index] != null;
+        }
+
+        /// <summary> 해당 슬롯이 셀 수 있는 아이템인지 여부 </summary>
+        public bool IsCountableItem(int index)
+        {
+            return IsValidIndex(index) && _items[index] is CountableItem;
+        }
+
+        /// <summary> 
+        /// 해당 슬롯의 현재 아이템 개수 리턴
+        /// <para/> - 잘못된 인덱스 : -1 리턴
+        /// <para/> - 빈 슬롯 : 0 리턴
+        /// <para/> - 셀 수 없는 아이템 : 1 리턴
+        /// </summary>
+        public int GetCurrentAmount(int index)
+        {
+            if(!IsValidIndex(index)) return -1;
+            if(_items[index] == null) return 0;
+            
+            CountableItem ci = _items[index] as CountableItem;
+            if(ci == null)
+                return 1;
+
+            return ci.Amount;
         }
 
         /// <summary> 인벤토리에 아이템 추가
@@ -345,8 +375,33 @@ namespace Rito.InventorySystem
             }
 
             // 두 슬롯 정보 갱신
-            UpdateSlot(indexA);
-            UpdateSlot(indexB);
+            UpdateSlot(indexA, indexB);
+        }
+
+        /// <summary> 셀 수 있는 아이템의 수량 나누기(A -> B 슬롯으로) </summary>
+        public void SeparateAmount(int indexA, int indexB, int amount)
+        {
+            // amount : 나눌 목표 수량
+
+            if(!IsValidIndex(indexA)) return;
+            if(!IsValidIndex(indexB)) return;
+
+            Item _itemA = _items[indexA];
+            Item _itemB = _items[indexB];
+
+            CountableItem _ciA = _itemA as CountableItem;
+
+            // 조건 : A 슬롯 - 셀 수 있는 아이템 / B 슬롯 - Null
+            // 조건에 맞지 않으면 종료
+            if (!(_ciA != null && _itemB == null))
+            {
+                return;
+            }
+
+            // 조건에 맞는 경우, 복제하여 슬롯 B에 추가
+            _items[indexB] = _ciA.SeperateAndClone(amount);
+
+            UpdateSlot(indexA, indexB);
         }
 
         /// <summary> 해당 슬롯의 아이템 사용 </summary>

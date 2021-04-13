@@ -11,8 +11,6 @@ namespace Rito.InventorySystem
     /// <summary> 장비 - 무기 아이템 </summary>
     public class WeaponItem : EquipmentItem
     {
-        public WeaponItemData WeaponData { get; private set; }
-
         public WeaponItem(WeaponItemData data) : base(data) { }
 
         // TODO

@@ -638,7 +638,34 @@ public class Test_Unirx : MonoBehaviour
             ;
 
         leftClickStream.Concat(rightClickStream)
-            .Subscribe(_ => Debug.Log("Left or Right Click"));
+            //.Subscribe(_ => Debug.Log("Left or Right Click"))
+            ;
+
+        this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(0))
+            .Select(a => 1)
+            .Scan((a, b) => a + b)
+            .TimeInterval()
+            .TakeUntil(rightDownStream)
+            .Finally(() => Debug.Log("finally"))
+            //.Subscribe(
+            //    _ => Debug.Log($"Left Click [Interval : {_.Interval}], [Value : {_.Value}]"),
+            //    () => Debug.Log("LC - Completed")
+            //)
+            ;
+
+        this.UpdateAsObservable()
+            .Where(_ => Input.GetMouseButtonDown(0))
+            .Select(a => 1)
+            .Scan((a, b) => a + b)
+            .Timestamp()
+            .TakeUntil(rightDownStream)
+            .Finally(() => Debug.Log("finally"))
+            //.Subscribe(
+            //    _ => Debug.Log($"Left Click [Timestamp : {_.Timestamp}], [Value : {_.Value}]"),
+            //    () => Debug.Log("LC - Completed")
+            //)
+            ;
     }
 
 

@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace Rito
 {
     /// <summary> 인벤토리 UI 위에 띄울 작은 팝업들 관리 </summary>
-    public class InventoryPopupManager : MonoBehaviour
+    public class InventoryPopupUI : MonoBehaviour
     {
         /***********************************************************************
         *                               Fields

@@ -51,7 +51,7 @@ namespace Rito.InventorySystem
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
         [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
         [SerializeField] private ItemTooltipUI _itemTooltip;   // 아이템 정보를 보여줄 툴팁 UI
-        [SerializeField] private InventoryPopupManager _popup;      // 팝업 UI 관리 객체
+        [SerializeField] private InventoryPopupUI _popup;      // 팝업 UI 관리 객체
 
         [Header("Buttons")]
         [SerializeField] private Button _trimButton;

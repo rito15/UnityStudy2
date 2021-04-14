@@ -187,7 +187,7 @@ namespace Rito.InventorySystem
             }
             else
             {
-                _iconImage.color = InaccessibleIconColor;
+                _iconImage.color  = InaccessibleIconColor;
                 _amountText.color = InaccessibleIconColor;
             }
 
@@ -264,9 +264,9 @@ namespace Rito.InventorySystem
             if (!this.IsAccessible) return;
 
             if (value)
-                StartCoroutine("HighlightFadeInRoutine");
+                StartCoroutine(nameof(HighlightFadeInRoutine));
             else
-                StartCoroutine("HighlightFadeOutRoutine");
+                StartCoroutine(nameof(HighlightFadeOutRoutine));
         }
 
         #endregion

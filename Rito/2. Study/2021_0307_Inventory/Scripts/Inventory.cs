@@ -3,6 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
+
 /*
     - Item의 상속구조
         - Item : abstract Use()
@@ -46,7 +57,7 @@ using UnityEngine;
     - [o] 앞에서부터 슬롯 빈 칸 채우기(Trim)
     - [o] 앞에서부터 빈칸 없이 정렬하기(타입에 따라)
     - [o] 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
-    - 셀 수 있는 아이템 개수 나누기(Shift/Ctrl + Drag, 나눌 개수 팝업으로 지정)
+    - [o] 셀 수 있는 아이템 개수 나누기(Shift/Ctrl + Drag, 나눌 개수 팝업으로 지정)
 */
 
 /*

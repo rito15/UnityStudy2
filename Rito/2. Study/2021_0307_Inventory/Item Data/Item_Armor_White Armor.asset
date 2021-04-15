@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b50f428ada62c3a40b63fb5674b59ee3, type: 3}
-  m_Name: Item_Armor_Red Armor
+  m_Name: Item_Armor_White Armor
   m_EditorClassIdentifier: 
   _id: 4
-  _name: "\uBD89\uC740 \uAC11\uC637"
-  _tooltip: "\uC0C8\uBE68\uAC04 \uAC11\uC637\uC774\uB2E4."
-  _iconSprite: {fileID: 21300000, guid: b28431a32956a32408d55628950ee7b1, type: 3}
+  _name: "\uD558\uC580 \uAC11\uC637"
+  _tooltip: "\uD558\uC580 \uAC11\uC637\uC774\uB2E4."
+  _iconSprite: {fileID: 21300000, guid: a1f270ff46445564e9afa40d0d9574db, type: 3}
   _dropItemPrefab: {fileID: 0}
   _maxDurability: 150
   _defence: 10

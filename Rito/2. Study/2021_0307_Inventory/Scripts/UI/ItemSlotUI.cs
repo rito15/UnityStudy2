@@ -269,6 +269,15 @@ namespace Rito.InventorySystem
                 StartCoroutine(nameof(HighlightFadeOutRoutine));
         }
 
+        /// <summary> 하이라이트 이미지를 아이콘 이미지의 상단/하단으로 표시 </summary>
+        public void SetHighlightOnTop(bool value)
+        {
+            if(value)
+                _highlightRect.SetAsLastSibling();
+            else
+                _highlightRect.SetAsFirstSibling();
+        }
+
         #endregion
         /***********************************************************************
         *                               Coroutines

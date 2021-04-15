@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: 5
   _name: "\uAE30\uC0AC\uC6A9 \uD22C\uAD6C"
   _tooltip: "\uAE30\uC0AC\uAC00 \uC4F8 \uAC83 \uAC19\uC740 \uD22C\uAD6C\uC774\uB2E4."
-  _iconSprite: {fileID: 21300000, guid: dac33dd898e05594a84f9b264ceff161, type: 3}
+  _iconSprite: {fileID: 21300000, guid: 2a3a301121704ab45bb55331eb763958, type: 3}
   _dropItemPrefab: {fileID: 0}
   _maxDurability: 100
   _defence: 5

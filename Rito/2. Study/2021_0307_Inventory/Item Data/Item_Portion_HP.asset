@@ -15,7 +15,7 @@ MonoBehaviour:
   _id: 0
   _name: "\uC18C\uD615 \uCCB4\uB825 \uD3EC\uC158"
   _tooltip: "\uCCB4\uB825\uC744 100 \uCC44\uC6CC\uC900\uB2E4."
-  _iconSprite: {fileID: 21300000, guid: d61276d76b2ee8643911990f5318f914, type: 3}
+  _iconSprite: {fileID: 21300000, guid: c2ebadfcb9b8cbb4a8ae6f124b17e332, type: 3}
   _dropItemPrefab: {fileID: 0}
   _maxAmount: 99
   _value: 100

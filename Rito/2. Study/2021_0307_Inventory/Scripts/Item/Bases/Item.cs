@@ -20,8 +20,5 @@ namespace Rito.InventorySystem
         public ItemData Data { get; private set; }
 
         public Item(ItemData data) => Data = data;
-
-        /// <summary> 아이템 사용하기(사용 성공 시 true 리턴) </summary>
-        public abstract bool Use();
     }
 }

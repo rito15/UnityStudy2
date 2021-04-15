@@ -5,20 +5,37 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-
 /*
-    [기능]
-    - 에디터모드에서 슬롯 미리보기
-    - 아이템 드래그 앤 드롭으로 이동, 교환, 버리기
-    - 슬롯에 아이템 등록
-    - 슬롯에서 아이템 제거
-    - 개수 수정
-*/
+    [기능 - 에디터 전용]
+    - 게임 시작 시 동적으로 생성될 슬롯 미리보기(개수, 크기 미리보기 가능)
 
-/*
-    TODO
+    [기능 - 유저 인터페이스]
+    - 슬롯에 마우스 올리기
+      - 사용 가능 슬롯 : 하이라이트 이미지 표시
+      - 아이템 존재 슬롯 : 아이템 정보 툴팁 표시
 
-    - 
+    - 드래그 앤 드롭
+      - 아이템 존재 슬롯 -> 아이템 존재 슬롯 : 두 아이템 위치 교환
+      - 아이템 존재 슬롯 -> 아이템 미존재 슬롯 : 아이템 위치 변경
+        - Shift 또는 Ctrl 누른 상태일 경우 : 셀 수 있는 아이템 수량 나누기
+      - 아이템 존재 슬롯 -> UI 바깥 : 아이템 버리기
+
+    - 슬롯 우클릭
+      - 사용 가능한 아이템일 경우 : 아이템 사용
+
+    - 기능 버튼(좌측 상단)
+      - Trim : 앞에서부터 빈 칸 없이 아이템 채우기
+      - Sort : 정해진 가중치대로 아이템 정렬
+
+    - 필터 버튼(우측 상단)
+      - [A] : 모든 아이템 필터링
+      - [E] : 장비 아이템 필터링
+      - [P] : 소비 아이템 필터링
+
+      * 필터링에서 제외된 아이템 슬롯들은 조작 불가
+
+    [기능 - 기타]
+    - InvertMouse(bool) : 마우스 좌클릭/우클릭 반전 여부 설정
 */
 
 // 날짜 : 2021-03-07 PM 7:34:31
@@ -205,30 +222,19 @@ namespace Rito.InventorySystem
 
         private void InitToggleEvents()
         {
-            _toggleFilterAll.onValueChanged.AddListener(value =>
+            _toggleFilterAll.onValueChanged.AddListener(       value => UpdateFilter(value, FilterOption.All));
+            _toggleFilterEquipments.onValueChanged.AddListener(value => UpdateFilter(value, FilterOption.Equipment));
+            _toggleFilterPortions.onValueChanged.AddListener(  value => UpdateFilter(value, FilterOption.Portion));
+
+            // Local Method
+            void UpdateFilter(bool trigger, FilterOption option)
             {
-                if (value)
+                if (trigger)
                 {
-                    _currentFilterOption = FilterOption.All;
+                    _currentFilterOption = option;
                     UpdateAllSlotFilters();
                 }
-            });
-            _toggleFilterEquipments.onValueChanged.AddListener(value =>
-            {
-                if (value)
-                {
-                    _currentFilterOption = FilterOption.Equipment;
-                    UpdateAllSlotFilters();
-                }
-            });
-            _toggleFilterPortions.onValueChanged.AddListener(value =>
-            {
-                if (value)
-                {
-                    _currentFilterOption = FilterOption.Portion;
-                    UpdateAllSlotFilters();
-                }
-            });
+            }
         }
 
         #endregion
@@ -304,11 +310,6 @@ namespace Rito.InventorySystem
             void OnPrevExit()
             {
                 prevSlot.Highlight(false);
-
-                //if (prevSlot.HasItem)
-                //{
-                //    EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
-                //}
             }
         }
         /// <summary> 아이템 정보 툴팁 보여주거나 감추기 </summary>
@@ -345,6 +346,9 @@ namespace Rito.InventorySystem
                     // 맨 위에 보이기
                     _beginDragSlotSiblingIndex = _beginDragSlot.transform.GetSiblingIndex();
                     _beginDragSlot.transform.SetAsLastSibling();
+
+                    // 해당 슬롯의 하이라이트 이미지를 아이콘보다 뒤에 위치시키기
+                    _beginDragSlot.SetHighlightOnTop(false);
                 }
                 else
                 {
@@ -390,6 +394,9 @@ namespace Rito.InventorySystem
                     // 드래그 완료 처리
                     EndDrag();
 
+                    // 해당 슬롯의 하이라이트 이미지를 아이콘보다 앞에 위치시키기
+                    _beginDragSlot.SetHighlightOnTop(true);
+
                     // 참조 제거
                     _beginDragSlot = null;
                     _beginDragIconTransform = null;
@@ -412,25 +419,26 @@ namespace Rito.InventorySystem
                     (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftShift)) &&
                     (_inventory.IsCountableItem(_beginDragSlot.Index) && !_inventory.HasItem(endDragSlot.Index));
 
-                // 1. 개수 나누기
+                // true : 수량 나누기, false : 교환 또는 이동
+                bool isSeparation = false;
+                int currentAmount = 0;
+
+                // 현재 개수 확인
                 if (isSeparatable)
                 {
-                    int currentAmount = _inventory.GetCurrentAmount(_beginDragSlot.Index);
+                    currentAmount = _inventory.GetCurrentAmount(_beginDragSlot.Index);
                     if (currentAmount > 1)
                     {
-                        TrySeparateAmount(_beginDragSlot.Index, endDragSlot.Index, currentAmount);
-                    }
-                    else
-                    {
-                        // 수량을 나눌 수 없는 경우 : 교환 또는 이동
-                        TrySwapItems(_beginDragSlot, endDragSlot);
+                        isSeparation = true;
                     }
                 }
+
+                // 1. 개수 나누기
+                if(isSeparation)
+                    TrySeparateAmount(_beginDragSlot.Index, endDragSlot.Index, currentAmount);
                 // 2. 교환 또는 이동
                 else
-                {
                     TrySwapItems(_beginDragSlot, endDragSlot);
-                }
 
                 // 툴팁 갱신
                 UpdateTooltipUI(endDragSlot);
@@ -442,7 +450,8 @@ namespace Rito.InventorySystem
             {
                 // 확인 팝업 띄우고 콜백 위임
                 int index = _beginDragSlot.Index;
-                _popup.OpenConfirmationPopup(() => TryRemoveItem(index));
+                string itemName = _inventory.GetItemName(index);
+                _popup.OpenConfirmationPopup(() => TryRemoveItem(index), itemName);
             }
             // 슬롯이 아닌 다른 UI 위에 놓은 경우
             else
@@ -488,6 +497,7 @@ namespace Rito.InventorySystem
             _inventory.Swap(from.Index, to.Index);
         }
 
+        /// <summary> 셀 수 있는 아이템 개수 나누기 </summary>
         private void TrySeparateAmount(int indexA, int indexB, int amount)
         {
             if (indexA == indexB)
@@ -498,9 +508,11 @@ namespace Rito.InventorySystem
 
             EditorLog($"UI - Try Separate Amount: Slot [{indexA} -> {indexB}]");
 
+            string itemName = _inventory.GetItemName(indexA);
+
             _popup.OpenAmountInputPopup(
                 amt => _inventory.SeparateAmount(indexA, indexB, amt),
-                amount
+                amount, itemName
             );
         }
 
@@ -612,13 +624,32 @@ namespace Rito.InventorySystem
             }
         }
 
+        /// <summary> 특정 슬롯의 필터 상태 업데이트 </summary>
+        public void UpdateSlotFilterState(int index, ItemData itemData)
+        {
+            bool isFiltered = true;
+
+            switch (_currentFilterOption)
+            {
+                case FilterOption.Equipment:
+                    isFiltered = (itemData is WeaponItemData);
+                    break;
+
+                case FilterOption.Portion:
+                    isFiltered = (itemData is PortionItemData);
+                    break;
+            }
+
+            _slotUIList[index].SetItemAccessibleState(isFiltered);
+        }
+
         #endregion
         /***********************************************************************
         *                               Editor Only Debug
         ***********************************************************************/
         #region .
 #if UNITY_EDITOR
-        [Header("Editor Options")]
+            [Header("Editor Options")]
         [SerializeField] private bool _showDebug = true;
 #endif
         [System.Diagnostics.Conditional("UNITY_EDITOR")]

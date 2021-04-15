@@ -3,89 +3,52 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-// TTTTTTTTTTTTTTOOOOOOOOOOODDDDDDDDOOOOOOOO : 카탈로그 작성
-
 /*
-    - Item의 상속구조
-        - Item : abstract Use()
-            - CountableItem
-                - PortionItem : Use() -> 사용
-            - EquipmentItem : Use() -> 착용
-                - WeaponItem
-                - ArmorItem
+    [Item의 상속구조]
+    - Item
+        - CountableItem
+            - PortionItem : IUsableItem.Use() -> 사용 및 수량 1 소모
+        - EquipmentItem
+            - WeaponItem
+            - ArmorItem
 
-    - ItemData의 상속구조
+    [ItemData의 상속구조]
       (ItemData는 해당 아이템이 공통으로 가질 데이터 필드 모음)
-      (개체마다 달라져야 하는 현재 내구도, 강화도 등은 Item 클래스에서)
+      (개체마다 달라져야 하는 현재 내구도, 강화도 등은 Item 클래스에서 관리)
 
-        - ItemData
-            - CountableItemData
-                - PortionItemData : 효과량(Value : 회복량, 공격력 등에 사용)
-            - EquipmentItemData : 최대 내구도
-                - WeaponItemData : 기본 공격력
-                - ArmorItemData : 기본 방어력
-
-*/
-
-
-/*
-    [기능]
-    - [o] 사용 가능/불가능 슬롯 관리
-    - [o] 셀 수 있는 아이템은 텍스트로 개수 표시
-    - [o] 아이템 이미지 드래그 앤 드롭
-    - [o] 아이템 습득
-        - 아이템 컨테이너 프리팹으로부터 습득                 -- TODO
-    - [o] 아이템 버리기
-        - [o]버리려고 할 때 팝업으로 물어보기
-        - 버리는데 성공하면 아이템 컨테이너 프리팹 생성       -- TODO
-    - [o] 아이템끼리 슬롯 교체
-    - [o] 마우스 올린 슬롯에 하이라이트 표시
-    - [o] 마우스 올린 슬롯에 아이템이 있으면 툴팁 UI 표시
-    - [o] 아이템 사용하기
-        - [o] 소비 아이템의 경우, 사용 성공 시 개수 하나 줄이기
-        - [o] 사용을 통해 개수가 0이 되는 경우, 슬롯에서 제거
-    - [o] 동일한 셀 수 있는 아이템끼리 드래그 앤 드롭할 경우 개수 합치기
-    - [o] 앞에서부터 슬롯 빈 칸 채우기(Trim)
-    - [o] 앞에서부터 빈칸 없이 정렬하기(타입에 따라)
-    - [o] 아이템 타입에 따라 필터링하기(전체(기본값), 장비, 소비)
-    - [o] 셀 수 있는 아이템 개수 나누기(Shift/Ctrl + Drag, 나눌 개수 팝업으로 지정)
+    - ItemData
+        - CountableItemData
+            - PortionItemData : 효과량(Value : 회복량, 공격력 등에 사용)
+        - EquipmentItemData : 최대 내구도
+            - WeaponItemData : 기본 공격력
+            - ArmorItemData : 기본 방어력
 */
 
 /*
+    [API]
+    - bool HasItem(int) : 해당 인덱스의 슬롯에 아이템이 존재하는지 여부
+    - bool IsCountableItem(int) : 해당 인덱스의 아이템이 셀 수 있는 아이템인지 여부
+    - int GetCurrentAmount(int) : 해당 인덱스의 아이템 수량
+        - -1 : 잘못된 인덱스
+        -  0 : 빈 슬롯
+        -  1 : 셀 수 없는 아이템이거나 수량 1
+    - ItemData GetItemData(int) : 해당 인덱스의 아이템 정보
+    - string GetItemName(int) : 해당 인덱스의 아이템 이름
+    - bool[] GetFilterMarkArray<T>() : T(ItemData 하위 클래스) 타입의 슬롯들은 true, 나머지는 false로 초기화한 배열
 
-    [TODO]
-
-    - ADD 구현 [완료]
-
-    - Unaccessible Slot 구현 [완료]
-
-    - Drag & Drop 구현 [완료]
-
-    - 아이템 습득 구현 [완료]
-
-    - 아이템 버리기 구현 [완료]
-
-    - 드래그 앤 드롭 시 셀 수 있는 아이템은 개수 합치도록 구현(Max 넘치면 Max까지만)
-
-    - 아이템 정렬 구현
-
-    - 아이템 분리 구현
-
-    - 인스펙터에서 가시적으로 아이템 슬롯 확인할 수 있도록(null인지 아닌지 여부) 커스텀 에디터 작성
-
-    - 인벤토리 아이템 아이콘에 마우스 올리면 뜨는 툴팁 구현
-
+    - int Add(ItemData, int) : 해당 타입의 아이템을 지정한 개수만큼 인벤토리에 추가
+        - 자리 부족으로 못넣은 개수만큼 리턴(0이면 모두 추가 성공했다는 의미)
+    - void Remove(int) : 해당 인덱스의 슬롯에 있는 아이템 제거
+    - void Swap(int, int) : 두 인덱스의 아이템 위치 서로 바꾸기
+    - void SeparateAmount(int a, int b, int amount)
+        - a 인덱스의 아이템이 셀 수 있는 아이템일 경우, amount만큼 분리하여 b 인덱스로 복제
+    - void Use(int) : 해당 인덱스의 아이템 사용
+    - void UpdateSlot(int) : 해당 인덱스의 슬롯 상태 및 UI 갱신
+    - void UpdateAllSlot() : 모든 슬롯 상태 및 UI 갱신
+    - void UpdateAccessibleStatesAll() : 모든 슬롯 UI에 접근 가능 여부 갱신
+    - void TrimAll() : 앞에서부터 아이템 슬롯 채우기
+    - void SortAll() : 앞에서부터 아이템 슬롯 채우면서 정렬
 */
-
 
 // 날짜 : 2021-03-07 PM 7:33:52
 // 작성자 : Rito
@@ -111,11 +74,11 @@ namespace Rito.InventorySystem
         #region .
 
         // 초기 수용 한도
-        [SerializeField]
+        [SerializeField, Range(1, 64)]
         private int _initalCapacity = 32;
 
-        // 최대 수용 한도(리스트 크기)
-        [SerializeField]
+        // 최대 수용 한도(아이템 배열 크기)
+        [SerializeField, Range(32, 64)]
         private int _maxCapacity = 64;
 
         [SerializeField]
@@ -141,6 +104,14 @@ namespace Rito.InventorySystem
         *                               Unity Events
         ***********************************************************************/
         #region .
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if(_initalCapacity > _maxCapacity)
+                _initalCapacity = _maxCapacity;
+        }
+#endif
         private void Awake()
         {
             _items = new Item[_maxCapacity];
@@ -192,15 +163,9 @@ namespace Rito.InventorySystem
 
         #endregion
         /***********************************************************************
-        *                               Public Methods
+        *                               Check & Getter Methods
         ***********************************************************************/
         #region .
-        /// <summary> 인벤토리 UI 연결 </summary>
-        public void ConnectUI(InventoryUI inventoryUI)
-        {
-            _inventoryUI = inventoryUI;
-            _inventoryUI.SetInventoryReference(this);
-        }
 
         /// <summary> 해당 슬롯이 아이템을 갖고 있는지 여부 </summary>
         public bool HasItem(int index)
@@ -222,14 +187,58 @@ namespace Rito.InventorySystem
         /// </summary>
         public int GetCurrentAmount(int index)
         {
-            if(!IsValidIndex(index)) return -1;
-            if(_items[index] == null) return 0;
-            
+            if (!IsValidIndex(index)) return -1;
+            if (_items[index] == null) return 0;
+
             CountableItem ci = _items[index] as CountableItem;
-            if(ci == null)
+            if (ci == null)
                 return 1;
 
             return ci.Amount;
+        }
+
+        /// <summary> 해당 슬롯의 아이템 정보 리턴 </summary>
+        public ItemData GetItemData(int index)
+        {
+            if (!IsValidIndex(index)) return null;
+            if (_items[index] == null) return null;
+
+            return _items[index].Data;
+        }
+
+        /// <summary> 해당 슬롯의 아이템 이름 리턴 </summary>
+        public string GetItemName(int index)
+        {
+            if (!IsValidIndex(index)) return "";
+            if (_items[index] == null) return "";
+
+            return _items[index].Data.Name;
+        }
+
+        /// <summary> 활성 슬롯들 중 특정 타입의 아이템은 true, 다른 아이템들은 false로 표시한 배열 리턴 </summary>
+        public bool[] GetFilterMarkArray<T>() where T : ItemData
+        {
+            bool[] markArray = new bool[Capacity];
+
+            for (int i = 0; i < Capacity; i++)
+            {
+                // null이면 필터에 포함
+                markArray[i] = (_items[i] == null || _items[i].Data is T);
+            }
+
+            return markArray;
+        }
+
+        #endregion
+        /***********************************************************************
+        *                               Public Methods
+        ***********************************************************************/
+        #region .
+        /// <summary> 인벤토리 UI 연결 </summary>
+        public void ConnectUI(InventoryUI inventoryUI)
+        {
+            _inventoryUI = inventoryUI;
+            _inventoryUI.SetInventoryReference(this);
         }
 
         /// <summary> 인벤토리에 아이템 추가
@@ -336,17 +345,13 @@ namespace Rito.InventorySystem
             return amount;
         }
 
-        /// <summary> 인벤토리에서 아이템 제거
-        /// <para/> - 잘못된 인덱스를 참조한 경우 false 리턴
-        /// </summary>
-        public bool Remove(int index)
+        /// <summary> 해당 슬롯의 아이템 제거 </summary>
+        public void Remove(int index)
         {
-            if (!IsValidIndex(index)) return false;
+            if (!IsValidIndex(index)) return;
 
             _items[index] = null;
             _inventoryUI.RemoveItem(index);
-
-            return true;
         }
 
         /// <summary> 두 인덱스의 아이템 위치를 서로 교체 </summary>
@@ -421,12 +426,16 @@ namespace Rito.InventorySystem
             if (!IsValidIndex(index)) return;
             if (_items[index] == null) return;
 
-            // 아이템 사용
-            bool succeeded = _items[index].Use();
-
-            if (succeeded)
+            // 사용 가능한 아이템인 경우
+            if (_items[index] is IUsableItem uItem)
             {
-                UpdateSlot(index);
+                // 아이템 사용
+                bool succeeded = uItem.Use();
+
+                if (succeeded)
+                {
+                    UpdateSlot(index);
+                }
             }
         }
 
@@ -451,6 +460,7 @@ namespace Rito.InventorySystem
                     {
                         _items[index] = null;
                         RemoveIcon();
+                        return;
                     }
                     // 1-1-2. 수량 텍스트 표시
                     else
@@ -463,6 +473,9 @@ namespace Rito.InventorySystem
                 {
                     _inventoryUI.HideItemAmountText(index);
                 }
+
+                // 슬롯 필터 상태 업데이트
+                _inventoryUI.UpdateSlotFilterState(index, item.Data);
             }
             // 2. 빈 슬롯인 경우 : 아이콘 제거
             else
@@ -552,29 +565,6 @@ namespace Rito.InventorySystem
 
             UpdateAllSlot();
             _inventoryUI.UpdateAllSlotFilters(); // 필터 상태 업데이트
-        }
-
-        /// <summary> 활성 슬롯들 중 특정 타입의 아이템은 true, 다른 아이템들은 false로 표시한 배열 리턴 </summary>
-        public bool[] GetFilterMarkArray<T>() where T : ItemData
-        {
-            bool[] markArray = new bool[Capacity];
-
-            for (int i = 0; i < Capacity; i++)
-            {
-                // null이면 필터에 포함
-                markArray[i] = (_items[i] == null || _items[i].Data is T);
-            }
-
-            return markArray;
-        }
-
-        /// <summary> 해당 슬롯의 아이템 정보 넘겨주기 </summary>
-        public ItemData GetItemData(int slotIndex)
-        {
-            if (!IsValidIndex(slotIndex)) return null;
-            if (_items[slotIndex] == null) return null;
-
-            return _items[slotIndex].Data;
         }
 
         #endregion

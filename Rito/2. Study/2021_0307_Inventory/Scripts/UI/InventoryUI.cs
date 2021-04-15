@@ -272,7 +272,6 @@ namespace Rito.InventorySystem
                 // Enter
                 if (curSlot != null)
                 {
-                    //EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
                     OnCurrentEnter();
                 }
             }
@@ -281,14 +280,12 @@ namespace Rito.InventorySystem
                 // Exit
                 if (curSlot == null)
                 {
-                    //EditorLog($"Mouse Exit : Slot [{prevSlot.Index}]");
                     OnPrevExit();
                 }
 
                 // Change
                 else if (prevSlot != curSlot)
                 {
-                    //EditorLog($"Focus Changed : Slot [{prevSlot.Index}] -> [{curSlot.Index}]");
                     OnPrevExit();
                     OnCurrentEnter();
                 }
@@ -367,6 +364,7 @@ namespace Rito.InventorySystem
                 }
             }
         }
+        /// <summary> 드래그하는 도중 </summary>
         private void OnPointerDrag()
         {
             if(_beginDragSlot == null) return;
@@ -378,6 +376,7 @@ namespace Rito.InventorySystem
                     _beginDragIconPoint + (Input.mousePosition - _beginDragCursorPoint);
             }
         }
+        /// <summary> 클릭을 뗄 경우 </summary>
         private void OnPointerUp()
         {
             if (Input.GetMouseButtonUp(_leftClick))
@@ -592,7 +591,7 @@ namespace Rito.InventorySystem
             }
         }
 
-        /// <summary> 모든 아이템 필터 상태 업데이트 </summary>
+        /// <summary> 모든 슬롯 필터 상태 업데이트 </summary>
         public void UpdateAllSlotFilters()
         {
             bool[] filterMarks;
@@ -632,7 +631,7 @@ namespace Rito.InventorySystem
             switch (_currentFilterOption)
             {
                 case FilterOption.Equipment:
-                    isFiltered = (itemData is WeaponItemData);
+                    isFiltered = (itemData is EquipmentItemData);
                     break;
 
                 case FilterOption.Portion:
@@ -649,7 +648,7 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
 #if UNITY_EDITOR
-            [Header("Editor Options")]
+        [Header("Editor Options")]
         [SerializeField] private bool _showDebug = true;
 #endif
         [System.Diagnostics.Conditional("UNITY_EDITOR")]

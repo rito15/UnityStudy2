@@ -56,9 +56,9 @@ namespace Rito.InventorySystem
         #region .
         [Header("Options")]
         [Range(0, 10)]
-        [SerializeField] private int _slotCountPerLine = 8;  // 한 줄 당 슬롯 개수
+        [SerializeField] private int _horizontalSlotCount = 8;  // 슬롯 가로 개수
         [Range(0, 10)]
-        [SerializeField] private int _slotLineCount = 8;     // 슬롯 줄 수
+        [SerializeField] private int _verticalSlotCount = 8;     // 슬롯 세로 개수
         [SerializeField] private float _slotMargin = 8f;     // 한 슬롯의 상하좌우 여백
         [SerializeField] private float _contentAreaPadding = 20f; // 인벤토리 영역의 내부 여백
         [Range(32, 64)]
@@ -144,22 +144,11 @@ namespace Rito.InventorySystem
             if (_gr == null)
                 _gr = gameObject.AddComponent<GraphicRaycaster>();
 
-            // 1. Rect Transform
-            _slotUiPrefab.TryGetComponent(out RectTransform slotRT);
-            slotRT.sizeDelta = new Vector2(_slotSize, _slotSize);
-
-            // 2. Slot UI
-            _slotUiPrefab.TryGetComponent(out ItemSlotUI slotUI);
-            if (slotUI == null)
-                _slotUiPrefab.AddComponent<ItemSlotUI>();
-
-            _slotUiPrefab.SetActive(false);
-
-            // 3. Graphic Raycaster
+            // Graphic Raycaster
             _ped = new PointerEventData(EventSystem.current);
             _rrList = new List<RaycastResult>(10);
 
-            // 4. Item Tooltip UI
+            // Item Tooltip UI
             if (_itemTooltip == null)
             {
                 _itemTooltip = GetComponentInChildren<ItemTooltipUI>();
@@ -170,17 +159,28 @@ namespace Rito.InventorySystem
         /// <summary> 지정된 개수만큼 슬롯 영역 내에 슬롯들 동적 생성 </summary>
         private void InitSlots()
         {
+            // 슬롯 프리팹 설정
+            _slotUiPrefab.TryGetComponent(out RectTransform slotRect);
+            slotRect.sizeDelta = new Vector2(_slotSize, _slotSize);
+
+            _slotUiPrefab.TryGetComponent(out ItemSlotUI itemSlot);
+            if (itemSlot == null)
+                _slotUiPrefab.AddComponent<ItemSlotUI>();
+
+            _slotUiPrefab.SetActive(false);
+
+            // --
             Vector2 beginPos = new Vector2(_contentAreaPadding, -_contentAreaPadding);
             Vector2 curPos = beginPos;
 
-            _slotUIList = new List<ItemSlotUI>(_slotLineCount * _slotCountPerLine);
+            _slotUIList = new List<ItemSlotUI>(_verticalSlotCount * _horizontalSlotCount);
 
-            // 슬롯들 생성
-            for (int j = 0; j < _slotLineCount; j++)
+            // 슬롯들 동적 생성
+            for (int j = 0; j < _verticalSlotCount; j++)
             {
-                for (int i = 0; i < _slotCountPerLine; i++)
+                for (int i = 0; i < _horizontalSlotCount; i++)
                 {
-                    int slotIndex = (_slotCountPerLine * j) + i;
+                    int slotIndex = (_horizontalSlotCount * j) + i;
 
                     var slotRT = CloneSlot();
                     slotRT.pivot = new Vector2(0f, 1f); // Left Top
@@ -201,9 +201,11 @@ namespace Rito.InventorySystem
                 curPos.y -= (_slotMargin + _slotSize);
             }
 
-            // 슬롯 프리팹 파괴
-            Destroy(_slotUiPrefab);
+            // 슬롯 프리팹 - 프리팹이 아닌 경우 파괴
+            if(_slotUiPrefab.scene.rootCount != 0)
+                Destroy(_slotUiPrefab);
 
+            // -- Local Method --
             RectTransform CloneSlot()
             {
                 GameObject slotGo = Instantiate(_slotUiPrefab);
@@ -706,8 +708,8 @@ namespace Rito.InventorySystem
             {
                 ClearAll();
                 CreateSlots();
-                __prevSlotCountPerLine = _slotCountPerLine;
-                __prevSlotLineCount = _slotLineCount;
+                __prevSlotCountPerLine = _horizontalSlotCount;
+                __prevSlotLineCount = _verticalSlotCount;
             }
             if (ValueChanged())
             {
@@ -725,16 +727,16 @@ namespace Rito.InventorySystem
             bool Unavailable()
             {
                 return !__showPreview ||
-                        _slotCountPerLine < 1 ||
-                        _slotLineCount < 1 ||
+                        _horizontalSlotCount < 1 ||
+                        _verticalSlotCount < 1 ||
                         _slotSize <= 0f ||
                         _contentAreaRT == null ||
                         _slotUiPrefab == null;
             }
             bool CountChanged()
             {
-                return _slotCountPerLine != __prevSlotCountPerLine ||
-                       _slotLineCount != __prevSlotLineCount;
+                return _horizontalSlotCount != __prevSlotCountPerLine ||
+                       _verticalSlotCount != __prevSlotLineCount;
             }
             bool ValueChanged()
             {
@@ -756,7 +758,7 @@ namespace Rito.InventorySystem
             }
             void CreateSlots()
             {
-                int count = _slotCountPerLine * _slotLineCount;
+                int count = _horizontalSlotCount * _verticalSlotCount;
                 __previewSlotGoList.Capacity = count;
 
                 // 슬롯의 피벗은 Left Top으로 고정
@@ -787,9 +789,9 @@ namespace Rito.InventorySystem
 
                 // Draw Slots
                 int index = 0;
-                for (int j = 0; j < _slotLineCount; j++)
+                for (int j = 0; j < _verticalSlotCount; j++)
                 {
-                    for (int i = 0; i < _slotCountPerLine; i++)
+                    for (int i = 0; i < _horizontalSlotCount; i++)
                     {
                         GameObject slotGo = __previewSlotGoList[index++];
                         RectTransform slotRT = slotGo.GetComponent<RectTransform>();

@@ -266,7 +266,6 @@ namespace Rito.InventorySystem
                         if (index == -1)
                         {
                             findNextCountable = false;
-                            index = -1;
                         }
                         // 기존재 슬롯을 찾은 경우, 양 증가시키고 초과량 존재 시 amount에 초기화
                         else
@@ -408,16 +407,13 @@ namespace Rito.InventorySystem
             CountableItem _ciA = _itemA as CountableItem;
 
             // 조건 : A 슬롯 - 셀 수 있는 아이템 / B 슬롯 - Null
-            // 조건에 맞지 않으면 종료
-            if (!(_ciA != null && _itemB == null))
-            {
-                return;
-            }
-
             // 조건에 맞는 경우, 복제하여 슬롯 B에 추가
-            _items[indexB] = _ciA.SeperateAndClone(amount);
+            if (_ciA != null && _itemB == null)
+            {
+                _items[indexB] = _ciA.SeperateAndClone(amount);
 
-            UpdateSlot(indexA, indexB);
+                UpdateSlot(indexA, indexB);
+            }
         }
 
         /// <summary> 해당 슬롯의 아이템 사용 </summary>

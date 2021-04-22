@@ -116,8 +116,11 @@ namespace Rito.InventorySystem
         {
             _items = new Item[_maxCapacity];
             Capacity = _initalCapacity;
-
             _inventoryUI.SetInventoryReference(this);
+        }
+
+        private void Start()
+        {
             UpdateAccessibleStatesAll();
         }
 

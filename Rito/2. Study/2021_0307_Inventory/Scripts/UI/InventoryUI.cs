@@ -257,8 +257,7 @@ namespace Rito.InventorySystem
             if(_rrList.Count == 0)
                 return null;
 
-            T component = _rrList[0].gameObject.GetComponent<T>();
-            return (component != null) ? component : null;
+            return _rrList[0].gameObject.GetComponent<T>();
         }
         /// <summary> 슬롯에 포인터가 올라가는 경우, 슬롯에서 포인터가 빠져나가는 경우 </summary>
         private void OnPointerEnterAndExit()

@@ -12,9 +12,8 @@ namespace Rito
         [SerializeField]
         private Transform _targetTr; // 이동될 UI
 
-        private Vector2 _startingPoint;
+        private Vector2 _beginPoint;
         private Vector2 _moveBegin;
-        private Vector2 _moveOffset;
 
         private void Awake()
         {
@@ -26,15 +25,14 @@ namespace Rito
         // 드래그 시작 위치 지정
         void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
         {
-            _startingPoint = _targetTr.position;
+            _beginPoint = _targetTr.position;
             _moveBegin = eventData.position;
         }
 
         // 드래그 : 마우스 커서 위치로 이동
         void IDragHandler.OnDrag(PointerEventData eventData)
         {
-            _moveOffset = eventData.position - _moveBegin;
-            _targetTr.position = _startingPoint + _moveOffset;
+            _targetTr.position = _beginPoint + (eventData.position - _moveBegin);
         }
     }
 }

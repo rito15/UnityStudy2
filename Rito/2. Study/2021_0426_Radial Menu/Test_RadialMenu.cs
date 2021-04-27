@@ -16,7 +16,9 @@ namespace Rito.Tests
         private void Update()
         {
             if (Input.GetKeyDown(key))
+            {
                 radialMenu.Show();
+            }
             else if (Input.GetKeyUp(key))
             {
                 int selected = radialMenu.Hide();

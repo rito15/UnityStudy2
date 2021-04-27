@@ -257,13 +257,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _pieceCount: 8
   _appearanceDuration: 0.3
-  _disappearanceDuration: 0.3
   _pieceDist: 180
   _centerDistThreshold: 0.1
   _pieceSample: {fileID: 677547022}
   _arrow: {fileID: 74853758}
-  _pieceDirections: []
   _selectedIndex: -1
+  _appearanceType: 5
+  _mainType: 0
 --- !u!1 &383198611
 GameObject:
   m_ObjectHideFlags: 0

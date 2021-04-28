@@ -263,9 +263,11 @@ MonoBehaviour:
   _pieceSample: {fileID: 1729358148}
   _arrow: {fileID: 74853758}
   _selectedIndex: -1
-  _appearanceType: 6
+  _appearanceType: 2
+  _appearanceEasing: 4
   _mainType: 2
-  _disappearanceType: 7
+  _disappearanceType: 4
+  _disappearanceEasing: 4
 --- !u!1 &383198611
 GameObject:
   m_ObjectHideFlags: 0

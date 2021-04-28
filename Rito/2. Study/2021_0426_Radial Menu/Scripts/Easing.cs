@@ -8,8 +8,30 @@ using UnityEngine;
 
 namespace Rito
 {
+    public enum EasingType
+    {
+        None,
+        EaseInExpo,
+        EaseOutExpo,
+        EaseInBounce,
+        EaseOutBounce
+    }
+
     public static class Easing
     {
+        public static float Get(float x, EasingType type)
+        {
+            switch (type)
+            {
+                default:
+                case EasingType.None: return x;
+                case EasingType.EaseInExpo: return EaseInExpo(x);
+                case EasingType.EaseOutExpo: return EaseOutExpo(x);
+                case EasingType.EaseInBounce: return EaseInBounce(x);
+                case EasingType.EaseOutBounce: return EaseOutBounce(x);
+            }
+        }
+
         public static float EaseInExpo(float x)
         {
             return x == 0f ? 0f : Mathf.Pow(2f, 10f * x - 10f);
@@ -19,6 +41,10 @@ namespace Rito
             return x == 1f ? 1f : 1f - Mathf.Pow(2f, -10f * x);
         }
 
+        public static float EaseInBounce(float x)
+        {
+            return 1 - EaseOutBounce(1 - x);
+        }
         public static float EaseOutBounce(float x)
         {
             const float n1 = 7.5625f;
@@ -42,9 +68,5 @@ namespace Rito
             }
         }
 
-        public static float EaseInBounce(float x)
-        {
-            return 1 - EaseOutBounce(1 - x);
-        }
     }
 }

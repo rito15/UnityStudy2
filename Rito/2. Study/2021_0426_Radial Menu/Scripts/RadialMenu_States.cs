@@ -16,20 +16,27 @@ namespace Rito
             None,
             Fade,
             ScaleChange,
+            ScaleChangeEaseOutExpo,
+            ScaleChangeEaseOutBounce,
             Spread,
+            SpreadEaseInExpo,
+            SpreadEaseInBounce,
             Progressive,
             ProgressiveFade,
             ProgressiveScaleChange,
+            ProgressiveSpread,
         }
         private enum MainType
         {
             AlphaChange,
-            ScaleChange
+            ScaleChange,
+            AlphaAndScaleChange
         }
 
         [Header("Animation Types")]
         [SerializeField] private AppearanceType _appearanceType;
         [SerializeField] private MainType _mainType;
+        [SerializeField] private AppearanceType _disappearanceType;
 
         private Dictionary<AppearanceType, AppearanceState> _appStateDict = 
             new Dictionary<AppearanceType, AppearanceState>();
@@ -43,7 +50,7 @@ namespace Rito
         private MenuState _currentState;
         private MenuState AState => _appStateDict[_appearanceType];
         private MenuState MState => _mainStateDict[_mainType];
-        private MenuState DState => _disStateDict[_appearanceType];
+        private MenuState DState => _disStateDict[_disappearanceType];
 
         // 상태 전환 진행도
         private float _stateProgress = 0f;
@@ -61,23 +68,34 @@ namespace Rito
             _appStateDict.Add(AppearanceType.None, new DefaultAppearance(this));
             _appStateDict.Add(AppearanceType.Fade, new FadeIn(this));
             _appStateDict.Add(AppearanceType.ScaleChange, new ScaleUp(this));
-            _appStateDict.Add(AppearanceType.Spread, new SpreadOut(this));
+            _appStateDict.Add(AppearanceType.ScaleChangeEaseOutExpo, new ScaleUpEaseOutExpo(this));
+            _appStateDict.Add(AppearanceType.ScaleChangeEaseOutBounce, new ScaleUpEaseOutBounce(this));
+            _appStateDict.Add(AppearanceType.Spread, new Spread(this));
+            _appStateDict.Add(AppearanceType.SpreadEaseInExpo, new SpreadEaseInExpo(this));
+            _appStateDict.Add(AppearanceType.SpreadEaseInBounce, new SpreadEaseInBounce(this));
             _appStateDict.Add(AppearanceType.Progressive, new ProgressiveAppearance(this));
             _appStateDict.Add(AppearanceType.ProgressiveFade, new ProgressiveFadeIn(this));
             _appStateDict.Add(AppearanceType.ProgressiveScaleChange, new ProgressiveScaleUp(this));
+            _appStateDict.Add(AppearanceType.ProgressiveSpread, new ProgressiveSpread(this));
 
             // 2. Main
             _mainStateDict.Add(MainType.AlphaChange, new MainAlphaChange(this));
             _mainStateDict.Add(MainType.ScaleChange, new MainScaleChange(this));
+            _mainStateDict.Add(MainType.AlphaAndScaleChange, new MainAlphaAndScaleChange(this));
 
             // 3. Disappearance
             _disStateDict.Add(AppearanceType.None, new DefaultDisappearance(this));
             _disStateDict.Add(AppearanceType.Fade, new FadeOut(this));
             _disStateDict.Add(AppearanceType.ScaleChange, new ScaleDown(this));
-            _disStateDict.Add(AppearanceType.Spread, new SpreadIn(this));
+            _disStateDict.Add(AppearanceType.ScaleChangeEaseOutExpo, new ScaleDownEaseOutExpo(this));
+            _disStateDict.Add(AppearanceType.ScaleChangeEaseOutBounce, new ScaleDownEaseOutBounce(this));
+            _disStateDict.Add(AppearanceType.Spread, new Gather(this));
+            _disStateDict.Add(AppearanceType.SpreadEaseInExpo, new GatherEaseInExpo(this));
+            _disStateDict.Add(AppearanceType.SpreadEaseInBounce, new GatherEaseInBounce(this));
             _disStateDict.Add(AppearanceType.Progressive, new ProgressiveDisappearance(this));
             _disStateDict.Add(AppearanceType.ProgressiveFade, new ProgressiveFadeOut(this));
             _disStateDict.Add(AppearanceType.ProgressiveScaleChange, new ProgressiveScaleDown(this));
+            _disStateDict.Add(AppearanceType.ProgressiveSpread, new ProgressiveGather(this));
         }
 
         private void ChangeToNextState()
@@ -95,6 +113,11 @@ namespace Rito
         /// <summary> 강제로 등장 상태에 진입 </summary>
         private void ForceToEnterAppearanceState()
         {
+            // 소멸 상태가 진행 중인 경우, 무시
+            if (_stateProgress > 0f)
+            {
+                return;
+            }
             _currentState = AState;
             _currentState.OnEnter();
         }
@@ -102,9 +125,19 @@ namespace Rito
         /// <summary> 강제로 소멸 상태에 진입 </summary>
         private void ForceToEnterDisappearanceState()
         {
-            _currentState.OnExit();
-            _currentState = DState;
-            DState.OnEnter();
+            // 등장 상태가 진행중이면 즉시 종료
+            if (_stateProgress < 1f)
+            {
+                _currentState = _disStateDict[AppearanceType.None];
+                _currentState.OnEnter();
+            }
+            // 정상 진행 : Disappearance 상태로 진입
+            else
+            {
+                _currentState.OnExit();
+                _currentState = DState;
+                DState.OnEnter();
+            }
         }
 
         /***********************************************************************
@@ -127,8 +160,12 @@ namespace Rito
             {
                 switch (menu._mainType)
                 {
-                    case MainType.AlphaChange: return NotSelectedPieceAlpha;
-                    default: return 1f;
+                    case MainType.AlphaChange:
+                    case MainType.AlphaAndScaleChange: 
+                        return NotSelectedPieceAlpha;
+
+                    default: 
+                        return 1f;
                 }
             }
         }
@@ -158,11 +195,11 @@ namespace Rito
                 menu.SetArrow(false);
 
                 if(menu._stateProgress == 0f)
-                    OnEnterWithZeroProgress();
+                    OnEnterAtZeroProgress();
             }
 
             /// <summary> 완전히 진행도가 0인 상태에서 나타날 경우 실행 </summary>
-            protected virtual void OnEnterWithZeroProgress() { }
+            protected virtual void OnEnterAtZeroProgress() { }
 
             public override void Update()
             {
@@ -259,7 +296,7 @@ namespace Rito
             public override void Update()
             {
                 Execute();
-                menu._stateProgress -= Time.deltaTime / menu._appearanceDuration;
+                menu._stateProgress -= Time.deltaTime / menu._disppearanceDuration;
 
                 if (menu._stateProgress <= 0f)
                 {
@@ -278,7 +315,7 @@ namespace Rito
 
         #endregion
         /***********************************************************************
-        *                               Appearance States
+        *                           Appearance States
         ***********************************************************************/
         #region .
         private sealed class DefaultAppearance : AppearanceState
@@ -291,7 +328,7 @@ namespace Rito
             }
         }
 
-        /// <summary> 서서히 알파값 변경 </summary>
+        /// <summary> 서서히 알파값 증가 </summary>
         private sealed class FadeIn : AppearanceState
         {
             private float alphaGoal;
@@ -306,7 +343,7 @@ namespace Rito
                 alphaGoal = GetMainStatePieceAlpha();
             }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(menu._pieceDist);
                 menu.SetAllPieceScale(1f);
@@ -326,7 +363,7 @@ namespace Rito
         {
             public ScaleUp(RadialMenu menu) : base(menu) { }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(menu._pieceDist);
                 menu.SetAllPieceScale(0.001f);
@@ -341,12 +378,64 @@ namespace Rito
             }
         }
 
-        /// <summary> 중앙에서부터 각자 위치로 흩어지기 </summary>
-        private sealed class SpreadOut : AppearanceState
+        /// <summary> 점점 커지기 - EaseOutExpo 그래프 적용 </summary>
+        private sealed class ScaleUpEaseOutExpo : AppearanceState
         {
-            public SpreadOut(RadialMenu menu) : base(menu) { }
+            private float alphaGoal;
+            public ScaleUpEaseOutExpo(RadialMenu menu) : base(menu) { }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
+            {
+                alphaGoal = GetMainStatePieceAlpha();
+
+                menu.SetAllPieceDistance(menu._pieceDist);
+                menu.SetAllPieceScale(0.001f);
+                menu.SetAllPieceAlpha(alphaGoal);
+                menu.SetAllPieceImageEnabled(true);
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseOutExpo(menu._stateProgress);
+
+                // 스케일, 알파 변경
+                menu.SetAllPieceScale(t);
+                menu.SetAllPieceAlpha(t * alphaGoal);
+            }
+        }
+
+        /// <summary> 점점 커지기 - EaseOutBounce 그래프 적용 </summary>
+        private sealed class ScaleUpEaseOutBounce : AppearanceState
+        {
+            private float alphaGoal;
+            public ScaleUpEaseOutBounce(RadialMenu menu) : base(menu) { }
+
+            protected override void OnEnterAtZeroProgress()
+            {
+                alphaGoal = GetMainStatePieceAlpha();
+
+                menu.SetAllPieceDistance(menu._pieceDist);
+                menu.SetAllPieceScale(0.001f);
+                menu.SetAllPieceAlpha(alphaGoal);
+                menu.SetAllPieceImageEnabled(true);
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseOutBounce(menu._stateProgress);
+
+                // 스케일, 알파 변경
+                menu.SetAllPieceScale(t);
+                menu.SetAllPieceAlpha(t * alphaGoal);
+            }
+        }
+
+        /// <summary> 중앙에서부터 각자 위치로 흩어지기 </summary>
+        private sealed class Spread : AppearanceState
+        {
+            public Spread(RadialMenu menu) : base(menu) { }
+
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(0f);
                 menu.SetAllPieceScale(0.001f);
@@ -367,12 +456,68 @@ namespace Rito
             }
         }
 
+        /// <summary> 흩어지기 - EaseInExpo 그래프 적용 </summary>
+        private sealed class SpreadEaseInExpo : AppearanceState
+        {
+            public SpreadEaseInExpo(RadialMenu menu) : base(menu) { }
+
+            protected override void OnEnterAtZeroProgress()
+            {
+                menu.SetAllPieceDistance(0f);
+                menu.SetAllPieceScale(0.001f);
+                menu.SetAllPieceAlpha(GetMainStatePieceAlpha());
+                menu.SetAllPieceImageEnabled(true);
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseInExpo(menu._stateProgress);
+
+                // 중앙으로부터의 거리 계산
+                float dist = menu._stateProgress * menu._pieceDist;
+
+                // 각 조각들을 중앙에서부터 서서히 이동
+                menu.SetAllPieceDistance(t * dist);
+
+                // 스케일도 변경
+                menu.SetAllPieceScale(t);
+            }
+        }
+
+        /// <summary> 흩어지기 - EaseInBounce 그래프 적용 </summary>
+        private sealed class SpreadEaseInBounce : AppearanceState
+        {
+            public SpreadEaseInBounce(RadialMenu menu) : base(menu) { }
+
+            protected override void OnEnterAtZeroProgress()
+            {
+                menu.SetAllPieceDistance(0f);
+                menu.SetAllPieceScale(0.001f);
+                menu.SetAllPieceAlpha(GetMainStatePieceAlpha());
+                menu.SetAllPieceImageEnabled(true);
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseInBounce(menu._stateProgress);
+
+                // 중앙으로부터의 거리 계산
+                float dist = menu._stateProgress * menu._pieceDist;
+
+                // 각 조각들을 중앙에서부터 서서히 이동
+                menu.SetAllPieceDistance(t * dist);
+
+                // 스케일도 변경
+                menu.SetAllPieceScale(t);
+            }
+        }
+
         /// <summary> 인덱스 0번부터 순차적으로 나타나기 </summary>
         private sealed class ProgressiveAppearance : AppearanceState
         {
             public ProgressiveAppearance(RadialMenu menu) : base(menu) { }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(menu._pieceDist);
                 menu.SetAllPieceScale(1f);
@@ -404,7 +549,7 @@ namespace Rito
                 alphaGoal = GetMainStatePieceAlpha();
             }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(menu._pieceDist);
                 menu.SetAllPieceScale(1f);
@@ -415,11 +560,15 @@ namespace Rito
             protected override void Execute()
             {
                 float t = menu._stateProgress;
+                float n = menu._pieceCount;
 
-                for (int i = 0; i < menu._pieceCount; i++)
+                for (int i = 0; i < n; i++)
                 {
-                    float x = (float)i / menu._pieceCount;
-                    float alpha = (t - x) / (1 - x);
+                    float a = i / n;
+                    float alpha = (t - a) / (1 - a);
+
+                    //float alpha = n * t - i;
+                    //if (alpha > 1f) alpha = 1f;
 
                     menu._pieceImages[i].color = new Color(1f, 1f, 1f, alpha * alphaGoal);
                 }
@@ -436,7 +585,7 @@ namespace Rito
                 base.OnEnter();
             }
 
-            protected override void OnEnterWithZeroProgress()
+            protected override void OnEnterAtZeroProgress()
             {
                 menu.SetAllPieceDistance(menu._pieceDist);
                 menu.SetAllPieceScale(0f);
@@ -447,24 +596,67 @@ namespace Rito
             protected override void Execute()
             {
                 float t = menu._stateProgress;
+                float n = menu._pieceCount;
 
-                for (int i = 0; i < menu._pieceCount; i++)
+                for (int i = 0; i < n; i++)
                 {
-                    float x = (float)i / menu._pieceCount;
-                    float scale = (t - x) / (1 - x);
+                    float a = i / n;
+                    float scale = (t - a) / (1 - a);
                     if (scale < 0f) scale = 0f;
+
+                    //float scale = n * t - i;
+                    //scale = Mathf.Clamp01(scale);
 
                     menu._pieceRects[i].localScale = new Vector3(scale, scale, 1f);
                 }
             }
         }
 
+        /// <summary> 인덱스 0번부터 순차적으로 외곽으로 흩어지기 </summary>
+        private sealed class ProgressiveSpread : AppearanceState
+        {
+            public ProgressiveSpread(RadialMenu menu) : base(menu) { }
+
+            public override void OnEnter()
+            {
+                base.OnEnter();
+            }
+
+            protected override void OnEnterAtZeroProgress()
+            {
+                menu.SetAllPieceDistance(0f);
+                menu.SetAllPieceScale(0f);
+                menu.SetAllPieceAlpha(GetMainStatePieceAlpha());
+                menu.SetAllPieceImageEnabled(true);
+            }
+
+            protected override void Execute()
+            {
+                float t = menu._stateProgress;
+                float n = menu._pieceCount;
+
+                for (int i = 0; i < n; i++)
+                {
+                    //float a = i / n;
+                    //float value = (t - a) / (1 - a);
+                    //if (value < 0f) value = 0f;
+
+                    float value = n * t - i;
+                    value = Mathf.Clamp01(value);
+
+                    menu._pieceRects[i].localScale = new Vector3(value, value, 1f);
+                    menu._pieceRects[i].anchoredPosition = menu._pieceDirections[i] * value * menu._pieceDist;
+                }
+            }
+        }
+
         #endregion
         /***********************************************************************
-        *                               Main States
+        *                           Main States
         ***********************************************************************/
         #region .
 
+        /// <summary> 선택된 조각 알파값 증가 </summary>
         private sealed class MainAlphaChange : MainState
         {
             public MainAlphaChange(RadialMenu menu) : base(menu) { }
@@ -487,6 +679,7 @@ namespace Rito
             }
         }
 
+        /// <summary> 선택된 조각 크기 증가 </summary>
         private sealed class MainScaleChange : MainState
         {
             public MainScaleChange(RadialMenu menu) : base(menu) { }
@@ -509,9 +702,39 @@ namespace Rito
             }
         }
 
+        /// <summary> 선택된 조각 알파, 크기 증가 </summary>
+        private sealed class MainAlphaAndScaleChange : MainState
+        {
+            public MainAlphaAndScaleChange(RadialMenu menu) : base(menu) { }
+
+            public override void OnSelectedIndexChanged(int prevIndex, int currentIndex)
+            {
+                if (prevIndex >= 0)
+                {
+                    menu.SetPieceAlpha(prevIndex, NotSelectedPieceAlpha);
+                    menu.SetPieceScale(prevIndex, 1f);
+                }
+
+                if (currentIndex >= 0)
+                {
+                    menu.SetPieceAlpha(currentIndex, 1f);
+                    menu.SetPieceScale(currentIndex, 1.2f);
+                }
+            }
+
+            public override void OnExit()
+            {
+                if (menu._selectedIndex >= 0)
+                {
+                    menu.SetPieceAlpha(menu._selectedIndex, NotSelectedPieceAlpha);
+                    menu.SetPieceScale(menu._selectedIndex, 1f);
+                }
+            }
+        }
+
         #endregion
         /***********************************************************************
-        *                               Disappearance States
+        *                           Disappearance States
         ***********************************************************************/
         #region .
 
@@ -521,11 +744,12 @@ namespace Rito
 
             protected override void Execute()
             {
+                menu._stateProgress = 0f;
                 menu.ChangeToNextState();
             }
         }
 
-        /// <summary> 서서히 알파값 변경 </summary>
+        /// <summary> 서서히 알파값 감소 </summary>
         private sealed class FadeOut : DisappearanceState
         {
             private float alphaGoal;
@@ -541,7 +765,7 @@ namespace Rito
 
             protected override void Execute()
             {
-                // 알파값 서서히 변경
+                // 알파값 서서히 감소
                 menu.SetAllPieceAlpha(alphaGoal * menu._stateProgress);
             }
         }
@@ -553,15 +777,63 @@ namespace Rito
 
             protected override void Execute()
             {
-                // 스케일 변경
+                // 스케일 감소
                 menu.SetAllPieceScale(menu._stateProgress);
             }
         }
 
-        /// <summary> 중심으로 이동 </summary>
-        private sealed class SpreadIn : DisappearanceState
+        /// <summary> 점점 작아지기 - EaseOutExpo 그래프 적용 </summary>
+        private sealed class ScaleDownEaseOutExpo : DisappearanceState
         {
-            public SpreadIn(RadialMenu menu) : base(menu) { }
+            private float alphaGoal;
+            public ScaleDownEaseOutExpo(RadialMenu menu) : base(menu) { }
+
+            public override void OnEnter()
+            {
+                base.OnEnter();
+
+                // 변화 목표 알파값 지정
+                alphaGoal = GetMainStatePieceAlpha();
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseOutExpo(menu._stateProgress);
+
+                // 스케일, 알파 변경
+                menu.SetAllPieceScale(t);
+                menu.SetAllPieceAlpha(t * alphaGoal);
+            }
+        }
+
+        /// <summary> 점점 작아지기 - EaseOutBounce 그래프 적용 </summary>
+        private sealed class ScaleDownEaseOutBounce : DisappearanceState
+        {
+            private float alphaGoal;
+            public ScaleDownEaseOutBounce(RadialMenu menu) : base(menu) { }
+
+            public override void OnEnter()
+            {
+                base.OnEnter();
+
+                // 변화 목표 알파값 지정
+                alphaGoal = GetMainStatePieceAlpha();
+            }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseOutBounce(menu._stateProgress);
+
+                // 스케일, 알파 변경
+                menu.SetAllPieceScale(t);
+                menu.SetAllPieceAlpha(t * alphaGoal);
+            }
+        }
+
+        /// <summary> 중심으로 이동 </summary>
+        private sealed class Gather : DisappearanceState
+        {
+            public Gather(RadialMenu menu) : base(menu) { }
 
             protected override void Execute()
             {
@@ -573,6 +845,46 @@ namespace Rito
 
                 // 스케일도 변경
                 menu.SetAllPieceScale(menu._stateProgress);
+            }
+        }
+
+        /// <summary> 중심으로 이동 - EaseInExpo 그래프 적용 </summary>
+        private sealed class GatherEaseInExpo : DisappearanceState
+        {
+            public GatherEaseInExpo(RadialMenu menu) : base(menu) { }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseInExpo(menu._stateProgress);
+
+                // 중앙으로부터의 거리 계산
+                float dist = menu._stateProgress * menu._pieceDist;
+
+                // 각 조각들을 중앙에서부터 서서히 이동
+                menu.SetAllPieceDistance(t * dist);
+
+                // 스케일도 변경
+                menu.SetAllPieceScale(t);
+            }
+        }
+
+        /// <summary> 중심으로 이동 - EaseInBounce 그래프 적용 </summary>
+        private sealed class GatherEaseInBounce : DisappearanceState
+        {
+            public GatherEaseInBounce(RadialMenu menu) : base(menu) { }
+
+            protected override void Execute()
+            {
+                float t = Easing.EaseInBounce(menu._stateProgress);
+
+                // 중앙으로부터의 거리 계산
+                float dist = menu._stateProgress * menu._pieceDist;
+
+                // 각 조각들을 중앙에서부터 서서히 이동
+                menu.SetAllPieceDistance(t * dist);
+
+                // 스케일도 변경
+                menu.SetAllPieceScale(t);
             }
         }
 
@@ -610,11 +922,15 @@ namespace Rito
             protected override void Execute()
             {
                 float t = menu._stateProgress;
+                float n = menu._pieceCount;
 
-                for (int i = 0; i < menu._pieceCount; i++)
+                for (int i = 0; i < n; i++)
                 {
-                    float x = (float)i / menu._pieceCount;
-                    float alpha = (t - x) / (1 - x);
+                    float a = i / n;
+                    float alpha = (t - a) / (1 - a);
+
+                    //float alpha = n * t - i;
+                    //if (alpha > 1f) alpha = 1f;
 
                     menu._pieceImages[i].color = new Color(1f, 1f, 1f, alpha * alphaGoal);
                 }
@@ -634,14 +950,48 @@ namespace Rito
             protected override void Execute()
             {
                 float t = menu._stateProgress;
+                float n = menu._pieceCount;
 
-                for (int i = 0; i < menu._pieceCount; i++)
+                for (int i = 0; i < n; i++)
                 {
-                    float x = (float)i / menu._pieceCount;
-                    float scale = (t - x) / (1 - x);
-                    if(scale < 0f) scale = 0f;
+                    float a = i / n;
+                    float scale = (t - a) / (1 - a);
+                    if (scale < 0f) scale = 0f;
+
+                    //float scale = n * t - i;
+                    //scale = Mathf.Clamp01(scale);
 
                     menu._pieceRects[i].localScale = new Vector3(scale, scale, 1f);
+                }
+            }
+        }
+
+        /// <summary> 마지막 인덱스부터 순차적으로 중앙으로 모으기 </summary>
+        private sealed class ProgressiveGather : DisappearanceState
+        {
+            public ProgressiveGather(RadialMenu menu) : base(menu) { }
+
+            public override void OnEnter()
+            {
+                base.OnEnter();
+            }
+
+            protected override void Execute()
+            {
+                float t = menu._stateProgress;
+                float n = menu._pieceCount;
+
+                for (int i = 0; i < n; i++)
+                {
+                    //float a = i / n;
+                    //float value = (t - a) / (1 - a);
+                    //if (value < 0f) value = 0f;
+
+                    float value = n * t - i;
+                    value = Mathf.Clamp01(value);
+
+                    menu._pieceRects[i].localScale = new Vector3(value, value, 1f);
+                    menu._pieceRects[i].anchoredPosition = menu._pieceDirections[i] * value * menu._pieceDist;
                 }
             }
         }

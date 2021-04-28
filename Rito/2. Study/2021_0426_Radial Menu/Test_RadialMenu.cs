@@ -13,6 +13,14 @@ namespace Rito.Tests
         public RadialMenu radialMenu;
         public KeyCode key = KeyCode.G;
 
+        [Space]
+        public Sprite[] sprites;
+
+        private void Start()
+        {
+            radialMenu.SetPieceImageSprites(sprites);
+        }
+
         private void Update()
         {
             if (Input.GetKeyDown(key))

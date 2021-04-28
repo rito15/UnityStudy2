@@ -17,6 +17,8 @@ namespace Rito
 
         [Range(0.2f, 1f)]
         [SerializeField] private float _appearanceDuration = .3f; // 등장에 걸리는 시간
+        [Range(0.2f, 1f)]
+        [SerializeField] private float _disppearanceDuration = .3f; // 소멸에 걸리는 시간
         [SerializeField] private float _pieceDist = 180f; // 중앙으로부터 각 조각의 거리
 
         [Range(0.01f, 0.5f)]
@@ -36,7 +38,7 @@ namespace Rito
         [SerializeField, Header("Debug")]
         private int _selectedIndex = -1;
 
-        private const float NotSelectedPieceAlpha = 0.3f;
+        private const float NotSelectedPieceAlpha = 0.5f;
         private static readonly Color SelectedPieceColor    = new Color(1f, 1f, 1f, 1f);
         private static readonly Color NotSelectedPieceColor = new Color(1f, 1f, 1f, NotSelectedPieceAlpha);
 
@@ -110,6 +112,12 @@ namespace Rito
         private void SetPieceAlpha(int index, float alpha)
         {
             _pieceImages[index].color = new Color(1f, 1f, 1f, alpha);
+        }
+
+        /// <summary> 지정한 이미지의 중심으로부터의 거리 변경 </summary>
+        private void SetPieceDistance(int index, float distance)
+        {
+            _pieceRects[index].anchoredPosition = _pieceDirections[index] * distance;
         }
 
         /// <summary> 해당 인덱스의 조각 크기 변경 </summary>

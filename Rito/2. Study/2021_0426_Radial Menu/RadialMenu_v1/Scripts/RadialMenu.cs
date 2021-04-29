@@ -7,9 +7,10 @@ using UnityEngine.UI;
 // 날짜 : 2021-04-26 PM 2:47:40
 // 작성자 : Rito
 
-namespace Rito
+namespace Rito.RadialMenu_v1
 {
-    public partial class RadialMenu : MonoBehaviour
+    [DisallowMultipleComponent]
+    public class RadialMenu : MonoBehaviour
     {
         [Header("Options")]
         [Range(2, 16)]
@@ -18,7 +19,7 @@ namespace Rito
         [Range(0.2f, 1f)]
         [SerializeField] private float _appearanceDuration = .3f; // 등장에 걸리는 시간
         [Range(0.2f, 1f)]
-        [SerializeField] private float _disppearanceDuration = .3f; // 소멸에 걸리는 시간
+        [SerializeField] private float _disappearanceDuration = .3f; // 사라지는데 걸리는 시간
         [SerializeField] private float _pieceDist = 180f; // 중앙으로부터 각 조각의 거리
 
         [Range(0.01f, 0.5f)]
@@ -38,9 +39,8 @@ namespace Rito
         [SerializeField, Header("Debug")]
         private int _selectedIndex = -1;
 
-        private const float NotSelectedPieceAlpha = 0.5f;
         private static readonly Color SelectedPieceColor    = new Color(1f, 1f, 1f, 1f);
-        private static readonly Color NotSelectedPieceColor = new Color(1f, 1f, 1f, NotSelectedPieceAlpha);
+        private static readonly Color NotSelectedPieceColor = new Color(1f, 1f, 1f, 0.3f);
 
         /***********************************************************************
         *                               Unity Events
@@ -51,10 +51,6 @@ namespace Rito
         {
             InitPieceImages();
             InitPieceDirections();
-            InitStateDicts();
-
-            SetAllPieceAlpha(0f); // 모든 조각의 초기 알파값 0으로 설정
-
             HideGameObject();
         }
 
@@ -108,61 +104,25 @@ namespace Rito
             gameObject.SetActive(false);
         }
 
-        /// <summary> 지정한 이미지의 알파값 변경 </summary>
-        private void SetPieceAlpha(int index, float alpha)
-        {
-            _pieceImages[index].color = new Color(1f, 1f, 1f, alpha);
-        }
-
-        /// <summary> 지정한 이미지의 중심으로부터의 거리 변경 </summary>
-        private void SetPieceDistance(int index, float distance)
-        {
-            _pieceRects[index].anchoredPosition = _pieceDirections[index] * distance;
-        }
-
-        /// <summary> 해당 인덱스의 조각 크기 변경 </summary>
-        private void SetPieceScale(int index, float scale)
-        {
-            _pieceRects[index].localScale = new Vector3(scale, scale, 1f);
-        }
-
-        /// <summary> 모든 조각을 중심으로부터 지정 거리만큼 이동 </summary>
-        private void SetAllPieceDistance(float distance)
+        /// <summary> 모든 조각의 색상 변경 </summary>
+        private void ResetAllPieceColors()
         {
             for (int i = 0; i < _pieceCount; i++)
             {
-                _pieceRects[i].anchoredPosition = _pieceDirections[i] * distance;
+                _pieceImages[i].color = NotSelectedPieceColor;
             }
         }
 
-        /// <summary> 모든 조각 이미지의 알파값 변경 </summary>
-        private void SetAllPieceAlpha(float alpha)
+        /// <summary> 현재 선택된 조각의 색상 변경 </summary>
+        private void SetSelectedPieceColors()
         {
-            for (int i = 0; i < _pieceCount; i++)
-            {
-                _pieceImages[i].color = new Color(1f, 1f, 1f, alpha);
-            }
+            ResetAllPieceColors();
+            if(_selectedIndex >= 0)
+                _pieceImages[_selectedIndex].color = SelectedPieceColor;
         }
 
-        /// <summary> 모든 조각의 크기 변경 </summary>
-        private void SetAllPieceScale(float scale)
-        {
-            for (int i = 0; i < _pieceCount; i++)
-            {
-                _pieceRects[i].localScale = new Vector3(scale, scale, 1f);
-            }
-        }
-
-        private void SetAllPieceImageEnabled(bool enabled)
-        {
-            for (int i = 0; i < _pieceCount; i++)
-            {
-                _pieceImages[i].enabled = enabled;
-            }
-        }
-
-        /// <summary> 화살표 이미지 게임오브젝트 활성화 여부, 회전 설정 </summary>
-        private void SetArrow(bool show)
+        /// <summary> 화살표 이미지의 회전 설정 </summary>
+        private void SetArrowRotation(bool show)
         {
             _arrow.gameObject.SetActive(show);
 
@@ -180,14 +140,19 @@ namespace Rito
         /// <summary> 등장 </summary>
         public void Show()
         {
-            ForceToEnterAppearanceState();
+            ShowGameObject();
+            ResetAllPieceColors();
+            SetArrowRotation(false);
+            _selectedIndex = -1;
+
+            StartCoroutine(nameof(MainRoutine));
         }
 
         /// <summary> 사라지면서 인덱스 리턴 </summary>
         public int Hide()
         {
-            ForceToEnterDisappearanceState();
-            SetArrow(false);
+            StopCoroutine(nameof(MainRoutine));
+            HideGameObject();
 
             return _selectedIndex;
         }
@@ -203,6 +168,77 @@ namespace Rito
                 {
                     _pieceImages[i].sprite = sprites[i];
                 }
+            }
+        }
+
+        #endregion
+        /***********************************************************************
+        *                               Coroutines
+        ***********************************************************************/
+        #region .
+        private IEnumerator MainRoutine()
+        {
+            float t = 0;
+            int prevSelectedIndex = -1;
+
+            // 1. 등장
+            while (t < _appearanceDuration)
+            {
+                // 중앙으로부터의 거리 계산
+                float dist = t * _pieceDist / _appearanceDuration;
+
+                // 각 조각들을 중앙에서부터 서서히 이동
+                for (int i = 0; i < _pieceCount; i++)
+                {
+                    _pieceRects[i].anchoredPosition = _pieceDirections[i] * dist;
+                }
+
+                t += Time.deltaTime;
+                yield return null;
+            }
+
+            // 2. 유지
+            while (true)
+            {
+                bool showArrow = false;
+
+                // 마우스의 스크린 내 좌표(0.0 ~ 1.0 범위)
+                var mViewportPos = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+
+                // 스크린의 중앙을 (0, 0)으로 하는 마우스 좌표(-0.5 ~ 0.5 범위)
+                var mPos = new Vector2(mViewportPos.x - 0.5f, mViewportPos.y - 0.5f);
+
+                // 중앙에서 마우스까지의 거리
+                var mDist = new Vector2(mPos.x * Screen.width / Screen.height, mPos.y).magnitude;
+
+                if (mDist < _centerDistThreshold)
+                {
+                    _selectedIndex = -1;
+                }
+                else
+                {
+                    // 마우스 위치의 직교 좌표를 시계 극좌표로 변환
+                    ClockwisePolarCoord mousePC = ClockwisePolarCoord.FromVector2(mPos);
+
+                    // Arrow 회전 설정
+                    _arrowRotationZ = -mousePC.Angle;
+                    showArrow = true;
+
+                    // 각도로부터 배열 인덱스 계산
+                    float fIndex = (mousePC.Angle / 360f) * _pieceCount;
+                    _selectedIndex = Mathf.RoundToInt(fIndex) % _pieceCount;
+                }
+
+                // 선택된 조각 색상 변경
+                if(prevSelectedIndex != _selectedIndex)
+                    SetSelectedPieceColors();
+
+                // 화살표 회전
+                SetArrowRotation(showArrow);
+
+                yield return null;
+
+                prevSelectedIndex = _selectedIndex;
             }
         }
 

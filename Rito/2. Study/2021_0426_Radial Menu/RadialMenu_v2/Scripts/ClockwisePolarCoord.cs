@@ -6,7 +6,7 @@ using UnityEngine;
 // 날짜 : 2021-04-26 PM 4:25:55
 // 작성자 : Rito
 
-namespace Rito
+namespace Rito.RadialMenu_v2
 {
     // 북쪽이 0도, 시계방향으로 각도가 커지는 시계 극좌표계의 좌표
     [Serializable]

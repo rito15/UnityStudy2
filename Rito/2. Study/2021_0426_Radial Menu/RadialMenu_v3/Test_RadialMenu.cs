@@ -6,7 +6,7 @@ using UnityEngine;
 // 날짜 : 2021-04-26 PM 3:12:50
 // 작성자 : Rito
 
-namespace Rito.Tests
+namespace Rito.RadialMenu_v3.Test
 {
     public class Test_RadialMenu : MonoBehaviour
     {

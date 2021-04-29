@@ -6,15 +6,18 @@ using UnityEngine;
 // 날짜 : 2021-04-28 PM 7:11:21
 // 작성자 : Rito
 
-namespace Rito
+namespace Rito.RadialMenu_v3
 {
     public enum EasingType
     {
         None,
         EaseInExpo,
         EaseOutExpo,
+        EaseOutBack,
         EaseInBounce,
-        EaseOutBounce
+        EaseOutBounce,
+        EaseInOutBounce,
+        EaseOutElastic,
     }
 
     public static class Easing
@@ -27,8 +30,11 @@ namespace Rito
                 case EasingType.None: return x;
                 case EasingType.EaseInExpo: return EaseInExpo(x);
                 case EasingType.EaseOutExpo: return EaseOutExpo(x);
+                case EasingType.EaseOutBack: return EaseOutBack(x);
                 case EasingType.EaseInBounce: return EaseInBounce(x);
                 case EasingType.EaseOutBounce: return EaseOutBounce(x);
+                case EasingType.EaseInOutBounce: return EaseInOutBounce(x);
+                case EasingType.EaseOutElastic: return EaseOutElastic(x);
             }
         }
 
@@ -39,6 +45,14 @@ namespace Rito
         public static float EaseOutExpo(float x)
         {
             return x == 1f ? 1f : 1f - Mathf.Pow(2f, -10f * x);
+        }
+
+        public static float EaseOutBack(float x)
+        {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+
+            return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
         }
 
         public static float EaseInBounce(float x)
@@ -67,6 +81,22 @@ namespace Rito
                 return n1 * (x -= 2.625f / d1) * x + 0.984375f;
             }
         }
+        public static float EaseInOutBounce(float x)
+        {
+            return x < 0.5f
+              ? (1f - EaseOutBounce(1f - 2f * x)) * 0.5f
+              : (1f + EaseOutBounce(2f * x - 1f)) * 0.5f;
+        }
 
+        public static float EaseOutElastic(float x)
+        {
+            const float c4 = (2f * Mathf.PI) / 3f;
+
+            return x == 0f
+              ? 0f
+              : x == 1f
+              ? 1f
+              : Mathf.Pow(2f, -10f * x) * Mathf.Sin((x * 10f - 0.75f) * c4) + 1f;
+        }
     }
 }

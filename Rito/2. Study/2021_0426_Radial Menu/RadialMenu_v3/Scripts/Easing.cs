@@ -11,13 +11,13 @@ namespace Rito.RadialMenu_v3
     public enum EasingType
     {
         None,
-        EaseInExpo,
-        EaseOutExpo,
-        EaseOutBack,
-        EaseInBounce,
-        EaseOutBounce,
-        EaseInOutBounce,
-        EaseOutElastic,
+        InExpo,
+        OutExpo,
+        OutBack,
+        InBounce,
+        OutBounce,
+        InOutBounce,
+        OutElastic,
     }
 
     public static class Easing
@@ -28,13 +28,13 @@ namespace Rito.RadialMenu_v3
             {
                 default:
                 case EasingType.None: return x;
-                case EasingType.EaseInExpo: return EaseInExpo(x);
-                case EasingType.EaseOutExpo: return EaseOutExpo(x);
-                case EasingType.EaseOutBack: return EaseOutBack(x);
-                case EasingType.EaseInBounce: return EaseInBounce(x);
-                case EasingType.EaseOutBounce: return EaseOutBounce(x);
-                case EasingType.EaseInOutBounce: return EaseInOutBounce(x);
-                case EasingType.EaseOutElastic: return EaseOutElastic(x);
+                case EasingType.InExpo: return EaseInExpo(x);
+                case EasingType.OutExpo: return EaseOutExpo(x);
+                case EasingType.OutBack: return EaseOutBack(x);
+                case EasingType.InBounce: return EaseInBounce(x);
+                case EasingType.OutBounce: return EaseOutBounce(x);
+                case EasingType.InOutBounce: return EaseInOutBounce(x);
+                case EasingType.OutElastic: return EaseOutElastic(x);
             }
         }
 

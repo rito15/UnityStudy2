@@ -64,6 +64,11 @@ namespace Rito.InventorySystem
         [Range(32, 64)]
         [SerializeField] private float _slotSize = 64f;      // 각 슬롯의 크기
 
+        [Space]
+        [SerializeField] private bool _showTooltip = true;
+        [SerializeField] private bool _showHighlight = true;
+        [SerializeField] private bool _showRemovingPopup = true;
+
         [Header("Connected Objects")]
         [SerializeField] private RectTransform _contentAreaRT; // 슬롯들이 위치할 영역
         [SerializeField] private GameObject _slotUiPrefab;     // 슬롯의 원본 프리팹
@@ -127,7 +132,7 @@ namespace Rito.InventorySystem
             _ped.position = Input.mousePosition;
 
             OnPointerEnterAndExit();
-            ShowOrHideItemTooltip();
+            if(_showTooltip) ShowOrHideItemTooltip();
             OnPointerDown();
             OnPointerDrag();
             OnPointerUp();
@@ -295,7 +300,8 @@ namespace Rito.InventorySystem
             // ===================== Local Methods ===============================
             void OnCurrentEnter()
             {
-                curSlot.Highlight(true);
+                if(_showHighlight)
+                    curSlot.Highlight(true);
 
                 if (curSlot.HasItem && curSlot.IsAccessible)
                 {
@@ -451,7 +457,11 @@ namespace Rito.InventorySystem
                 // 확인 팝업 띄우고 콜백 위임
                 int index = _beginDragSlot.Index;
                 string itemName = _inventory.GetItemName(index);
-                _popup.OpenConfirmationPopup(() => TryRemoveItem(index), itemName);
+
+                if(_showRemovingPopup)
+                    _popup.OpenConfirmationPopup(() => TryRemoveItem(index), itemName);
+                else
+                    TryRemoveItem(index);
             }
             // 슬롯이 아닌 다른 UI 위에 놓은 경우
             else

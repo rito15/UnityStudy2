@@ -15611,7 +15611,7 @@ MonoBehaviour:
   _updateCycle: 0.2
   _fogAlpha:
     current: 0
-    visited: 0.8
+    visited: 0.9
     never: 1
   _showGizmos: 0
 --- !u!4 &2022703077

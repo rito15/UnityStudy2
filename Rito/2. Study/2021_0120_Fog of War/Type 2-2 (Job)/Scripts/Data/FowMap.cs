@@ -17,14 +17,19 @@ namespace Rito.FogOfWarJob
         //public List<FowTile> fMap => map;
 
         private List<FowTile> map = new List<FowTile>();
+        private List<int> visibleTileIndexList = new List<int>();
+        private List<TilePos> tilesInSight = new List<TilePos>();
+
         private int mapWidthX;
         private int mapWidthZ;
 
+        private int mapLength;
+
         // 배열들은 타일 개수만큼 크기 생성
-        private Visit[] visit;
+        private float[] visit; // 방문 여부 : 알파값을 직접 저장
 
         //public Color32[] colorBuffer;
-        private Color32[] fogBuffer;
+        private Color[] fogBuffer;
         private Material blurMat;
 
         private Texture2D texBuffer;
@@ -36,6 +41,11 @@ namespace Rito.FogOfWarJob
 
         private NativeArray<float> heightMap;
 
+        ~FowMap()
+        {
+            heightMap.Dispose();
+        }
+
         /***********************************************************************
         *                               Init, Release
         ***********************************************************************/
@@ -46,12 +56,14 @@ namespace Rito.FogOfWarJob
             mapWidthX = heightData.GetLength(0);
             mapWidthZ = heightData.GetLength(1);
 
-            int length = mapWidthX * mapWidthZ;
+            mapLength = mapWidthX * mapWidthZ;
 
-            visit = new Visit[length];
-            fogBuffer = new Color32[length];
+            visit = new float[mapLength];
+            for(int i = 0; i < mapLength; i++)
+                visit[i] = FowManager.NeverAlpha;
 
-            //colorInfo = new Color32[mapWidth * mapHeight];
+            fogBuffer = new Color[mapLength];
+
             blurMat = new Material(Shader.Find("FogOfWar/AverageBlur"));
             texBuffer = new Texture2D(mapWidthX, mapWidthZ, TextureFormat.ARGB32, false);
             texBuffer.wrapMode = TextureWrapMode.Clamp;
@@ -66,7 +78,7 @@ namespace Rito.FogOfWarJob
             curTexture = RenderTexture.GetTemporary(widthX, widthZ, 0);
 
             // 잡을 위한 높이 맵
-            heightMap = new NativeArray<float>(length, Allocator.Persistent);
+            heightMap = new NativeArray<float>(mapLength, Allocator.Persistent);
 
             for (int j = 0; j < mapWidthZ; j++)
             {
@@ -89,7 +101,8 @@ namespace Rito.FogOfWarJob
             RenderTexture.ReleaseTemporary(nextTexture);
             RenderTexture.ReleaseTemporary(curTexture);
 
-            heightMap.Dispose();
+            if(heightMap != null && heightMap.IsCreated)
+                heightMap.Dispose();
         }
 
         #endregion
@@ -123,6 +136,12 @@ namespace Rito.FogOfWarJob
             return x + y * mapWidthX;
         }
 
+        /// <summary> (x, y) 타일좌표를 배열인덱스로 변환 </summary>
+        public int GetTileIndex(in TilePos pos)
+        {
+            return pos.x + pos.y * mapWidthX;
+        }
+
         #endregion
         /***********************************************************************
         *                               Public Methods
@@ -139,54 +158,96 @@ namespace Rito.FogOfWarJob
         /// <summary> 지난 번 시행에 유닛이 존재해서 밝게 나타냈던 부분을 다시 안개로 가려줌 </summary>
         public void RefreshFog()
         {
-            foreach (FowTile tile in map)
+            for (int i = 0; i < mapLength; i++)
             {
-                int index = tile.index;
-                visit[index].current = false;
+                if(visit[i] == FowManager.CurrentAlpha)
+                    visit[i] = FowManager.I._visitedAlpha;
             }
         }
 
         /// <summary> 타일 위치로부터 시야만큼 안개 계산 </summary>
-        public void ComputeFog(TilePos pos, in float sightXZ, in float sightY
+        public IEnumerator ComputeFogRoutine(List<(TilePos pos, float sightXZ, float sightY)> unitList
 #if DEBUG_RANGE
             , out List<TilePos> visibles
 #endif
         )
         {
-            int sightRangeInt = (int)sightXZ;
-            int rangeSquare = sightRangeInt * sightRangeInt;
-
-            // 현재 시야(원형 범위)만큼의 타일들 목록
-            // x^2 + y^2 <= range^2
-            var tilesInSight = new List<TilePos>();
-            for (int i = -sightRangeInt; i <= sightRangeInt; i++)
+            foreach (var (pos, sightXZ, sightY) in unitList)
             {
-                for (int j = -sightRangeInt; j <= sightRangeInt; j++)
+                int sightRangeInt = (int)sightXZ;
+                int rangeSquare = sightRangeInt * sightRangeInt;
+
+                // 현재 시야(원형 범위)만큼의 타일들 목록
+                // x^2 + y^2 <= range^2
+                tilesInSight.Clear();
+                for (int i = -sightRangeInt; i <= sightRangeInt; i++)
                 {
-                    if (i * i + j * j <= rangeSquare)
+                    for (int j = -sightRangeInt; j <= sightRangeInt; j++)
                     {
-                        var tile = GetTile(pos.x + i, pos.y + j);
-                        if (tile != null)
+                        if (i * i + j * j <= rangeSquare)
                         {
-                            tilesInSight.Add(tile.pos);
+                            var tile = GetTile(pos.x + i, pos.y + j);
+                            if (tile != null)
+                            {
+                                tilesInSight.Add(tile.pos);
+                            }
                         }
                     }
                 }
-            }
 
-            // 시야를 밝힐 수 있는 타일들 목록 가져오기
-            List<TilePos> visibleTileList =
-                GetVisibleTilesInRange(tilesInSight, pos, sightY);
-#if DEBUG_RANGE
-            visibles = visibleTileList;
-#endif
+                // 시야를 밝힐 수 있는 타일들 목록 가져오기
+                visibleTileIndexList.Clear();
+                visibleTileIndexList.Capacity = mapLength / 4;
 
-            // 현재 방문, 과거 방문 여부 true
-            foreach (TilePos visibleTile in visibleTileList)
-            {
-                int index = GetTileIndex(visibleTile.x, visibleTile.y);
-                visit[index].current = true;
-                visit[index].ever = true;
+                int len = tilesInSight.Count;
+
+                // 영역 내의 타일들
+                NativeArray<TilePos> targetTilesArray = new NativeArray<TilePos>(tilesInSight.ToArray(), Allocator.TempJob);
+
+                // 결과 받아올 배열
+                NativeArray<bool> resultArray = new NativeArray<bool>(len, Allocator.TempJob);
+
+                FowJob job = new FowJob
+                {
+                    origin = pos,
+                    heightArray = heightMap,
+                    destArray = targetTilesArray,
+                    resultArray = resultArray,
+                    sightHeight = sightY,
+                    mapWidth = mapWidthX,
+                    mapLength = map.Count
+                };
+
+                // 스케줄링
+                JobHandle handle = job.Schedule(len, 8);
+
+                // 조인
+                if (handle.IsCompleted == false)
+                    yield return null;
+
+                handle.Complete();
+
+                // 결과 확인
+                for (int i = 0; i < len; i++)
+                {
+                    if (!resultArray[i])
+                    {
+                        visibleTileIndexList.Add(GetTileIndex(tilesInSight[i]));
+                    }
+                }
+
+                // 해제
+                targetTilesArray.Dispose();
+                resultArray.Dispose();
+
+
+                // 현재 방문
+                foreach (int index in visibleTileIndexList)
+                {
+                    visit[index] = FowManager.CurrentAlpha;
+                }
+
+
             }
 
             ApplyFogAlpha();
@@ -198,11 +259,11 @@ namespace Rito.FogOfWarJob
         ***********************************************************************/
         #region .
         /// <summary> 시야 내 타일들 중 중심으로부터 밝힐 수 있는 타일들 가져오기 </summary>
-        private List<TilePos> GetVisibleTilesInRange(
+        private List<int> GetVisibleTilesInRange(
             List<TilePos> tilesInSight, in TilePos centerPos, in float sightHeight)
         {
             int len = tilesInSight.Count;
-            List<TilePos> visibleTiles = new List<TilePos>();
+            List<int> visibleTiles = new List<int>();
 
             // 영역 내의 타일들
             NativeArray<TilePos> targetTilesArray = new NativeArray<TilePos>(tilesInSight.ToArray(), Allocator.TempJob);
@@ -232,7 +293,7 @@ namespace Rito.FogOfWarJob
             {
                 if (!resultArray[i])
                 {
-                    visibleTiles.Add(tilesInSight[i]);
+                    visibleTiles.Add(GetTileIndex(tilesInSight[i]));
                 }
             }
 
@@ -440,17 +501,10 @@ namespace Rito.FogOfWarJob
         {
             foreach (var tile in map)
             {
-                int index = tile.index;
-                byte alpha;
-
-                if (visit[index].current) alpha = 0;     // 현재 위치한 경우 알파 제로
-                else if (visit[index].ever) alpha = 200; // 과거 방문 이력
-                else alpha = 255;                        // 한 번도 방문한 적 없음
-
-                fogBuffer[index].a = alpha;
+                fogBuffer[tile.index].a = visit[tile.index];
             }
 
-            texBuffer.SetPixels32(fogBuffer);
+            texBuffer.SetPixels(fogBuffer);
             texBuffer.Apply();
 
             Graphics.Blit(texBuffer, renderBuffer, blurMat, 0);

@@ -80,10 +80,22 @@ namespace Rito.FogOfWarJob
         ***********************************************************************/
         #region .
 
+        public const float CurrentAlpha = 0f; // 현재 위치한 경우 알파값
+        public const float NeverAlpha = 1f; // 방문한 적 없는 경우 알파값
+
         public LayerMask _groundLayer;
+
+        [Space(8f)]
         public float _fogWidthX = 20;
         public float _fogWidthZ = 20;
         public float _tileSize = 1; // 타일 하나의 크기
+
+        [Space(8f)]
+        [Range(0f, 1f)]
+        public float _visitedAlpha = 0.8f;
+
+        [Space(8f)]
+        [Range(0.1f, 1.0f)]
         public float _updateCycle = 0.5f;
 
         public bool _showGizmos = true;
@@ -107,7 +119,7 @@ namespace Rito.FogOfWarJob
         }
         private void OnEnable()
         {
-            StartCoroutine(UpdateFogRoutine());
+            StartCoroutine(nameof(UpdateFogRoutine));
         }
 
         private void Update()
@@ -117,8 +129,10 @@ namespace Rito.FogOfWarJob
 
         private void OnDestroy()
         {
+            StopCoroutine(nameof(UpdateFogRoutine));
             Map.Release();
         }
+
         #endregion
 
         /***********************************************************************
@@ -196,6 +210,8 @@ namespace Rito.FogOfWarJob
         *                               Coroutine
         ***********************************************************************/
         #region .
+        private List<(TilePos, float sightXZ, float sightY)> unitDataList
+            = new List<(TilePos, float sightXZ, float sightY)>();
         public IEnumerator UpdateFogRoutine()
         {
             while (true)
@@ -204,20 +220,18 @@ namespace Rito.FogOfWarJob
                 {
                     Map.RefreshFog();
 
+                    unitDataList.Clear();
                     foreach (var unit in UnitList)
                     {
-                        TilePos pos = GetTilePos(unit);
-                        Map.ComputeFog(pos,
-                            unit.sightRange / _tileSize,
-                            unit.sightHeight
-#if DEBUG_RANGE
-                            , out visibleTiles
-#endif
-                            );
+                        unitDataList.Add((GetTilePos(unit), unit.sightRange / _tileSize, unit.sightHeight));
                     }
+                    yield return StartCoroutine(
+                        Map.ComputeFogRoutine(unitDataList)
+                    );
                 }
 
-                yield return new WaitForSeconds(_updateCycle);
+                yield return null;
+                //yield return new WaitForSeconds(_updateCycle);
             }
         }
 

@@ -15,8 +15,9 @@ namespace Rito.FogOfWar
         private int mapWidth;
         private int mapHeight;
 
+        private int mapLength;
+
         // 배열들은 타일 개수만큼 크기 생성
-        //private Visit[] visit;
         private float[] visit;
 
         private Color[] colorBuffer;
@@ -33,6 +34,7 @@ namespace Rito.FogOfWar
         public Texture FogTexture => curTexture;
 
         public FowManager FM => FowManager.I;
+        public FowManager.FogAlpha AlphaData => FowManager.I._fogAlpha;
 
         /***********************************************************************
         *                               Init, Release
@@ -44,9 +46,13 @@ namespace Rito.FogOfWar
             mapWidth  = heightMap.GetLength(0);
             mapHeight = heightMap.GetLength(1);
 
-            //visit       = new Visit[mapWidth * mapHeight];
-            visit       = new float[mapWidth * mapHeight];
-            colorBuffer = new Color[mapWidth * mapHeight];
+            mapLength = mapWidth * mapHeight;
+
+            visit       = new float[mapLength];
+            colorBuffer = new Color[mapLength];
+
+            for(int i = 0; i < mapLength; i++)
+                visit[i] = AlphaData.never;
 
             blurMat = new Material(Shader.Find("FogOfWar/AverageBlur"));
             texBuffer = new Texture2D(mapWidth, mapHeight, TextureFormat.ARGB32, false);
@@ -133,11 +139,10 @@ namespace Rito.FogOfWar
         /// <summary> 지난 번 시행에 유닛이 존재해서 밝게 나타냈던 부분을 다시 안개로 가려줌 </summary>
         public void RefreshFog()
         {
-            foreach (FowTile tile in map)
+            for (int i = 0; i < mapLength; i++)
             {
-                int index = tile.index;
-                //visit[index].current = false;
-                visit[index] = FM._fogAlpha.visited;
+                if (visit[i] == AlphaData.current)
+                    visit[i] = AlphaData.visited;
             }
         }
 
@@ -193,7 +198,7 @@ namespace Rito.FogOfWar
             // 현재 방문, 과거 방문 여부 true
             foreach (FowTile visibleTile in visibleTileList)
             {
-                visit[visibleTile.index] = FM._fogAlpha.current;
+                visit[visibleTile.index] = AlphaData.current;
             }
 
             ApplyFogAlpha();

@@ -632,11 +632,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5b81c692dc3d044483c3ae773ada1f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _slotCountPerLine: 8
-  _slotLineCount: 8
+  _horizontalSlotCount: 8
+  _verticalSlotCount: 8
   _slotMargin: 4
   _contentAreaPadding: 8
   _slotSize: 64
+  _showTooltip: 1
+  _showHighlight: 1
+  _showRemovingPopup: 1
   _contentAreaRT: {fileID: 310482291}
   _slotUiPrefab: {fileID: 382849820}
   _itemTooltip: {fileID: 1475518327}
@@ -7161,7 +7164,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -0.002746582, y: 0}
+  m_AnchoredPosition: {x: -0.0029296875, y: 0}
   m_SizeDelta: {x: 550, y: 0}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &2023204934

@@ -69,7 +69,7 @@ namespace Rito.InventorySystem
 
         private Image _slotImage;
 
-        // 하이라이트 알파값
+        // 현재 하이라이트 알파값
         private float _currentHLAlpha = 0f;
 
         private bool _isAccessibleSlot = true; // 슬롯 접근가능 여부
@@ -259,11 +259,11 @@ namespace Rito.InventorySystem
         }
 
         /// <summary> 슬롯에 하이라이트 표시/해제 </summary>
-        public void Highlight(bool value)
+        public void Highlight(bool show)
         {
             if (!this.IsAccessible) return;
 
-            if (value)
+            if (show)
                 StartCoroutine(nameof(HighlightFadeInRoutine));
             else
                 StartCoroutine(nameof(HighlightFadeOutRoutine));
@@ -283,10 +283,10 @@ namespace Rito.InventorySystem
         *                               Coroutines
         ***********************************************************************/
         #region .
-        /// <summary> 하이라이트 알파값 0f => 1f 서서히 증가 </summary>
+        /// <summary> 하이라이트 알파값 서서히 증가 </summary>
         private IEnumerator HighlightFadeInRoutine()
         {
-            StopCoroutine("HighlightFadeOutRoutine");
+            StopCoroutine(nameof(HighlightFadeOutRoutine));
             _highlightGo.SetActive(true);
 
             float unit = _highlightAlpha / _highlightFadeDuration;
@@ -304,9 +304,10 @@ namespace Rito.InventorySystem
             }
         }
 
+        /// <summary> 하이라이트 알파값 0%까지 서서히 감소 </summary>
         private IEnumerator HighlightFadeOutRoutine()
         {
-            StopCoroutine("HighlightFadeInRoutine");
+            StopCoroutine(nameof(HighlightFadeInRoutine));
 
             float unit = _highlightAlpha / _highlightFadeDuration;
 

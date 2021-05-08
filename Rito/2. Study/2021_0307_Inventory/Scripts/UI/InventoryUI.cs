@@ -457,6 +457,11 @@ namespace Rito.InventorySystem
                 // 확인 팝업 띄우고 콜백 위임
                 int index = _beginDragSlot.Index;
                 string itemName = _inventory.GetItemName(index);
+                int amount = _inventory.GetCurrentAmount(index);
+
+                // 셀 수 있는 아이템의 경우, 수량 표시
+                if(amount > 1)
+                    itemName += $" x{amount}";
 
                 if(_showRemovingPopup)
                     _popup.OpenConfirmationPopup(() => TryRemoveItem(index), itemName);

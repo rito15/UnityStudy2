@@ -302,14 +302,6 @@ namespace Rito.InventorySystem
             {
                 if(_showHighlight)
                     curSlot.Highlight(true);
-
-                if (curSlot.HasItem && curSlot.IsAccessible)
-                {
-                    EditorLog($"Mouse Over : Slot [{curSlot.Index}]");
-
-                    // 툴팁 정보 갱신
-                    UpdateTooltipUI(curSlot);
-                }
             }
             void OnPrevExit()
             {
@@ -325,7 +317,10 @@ namespace Rito.InventorySystem
                 && (_pointerOverSlot != _beginDragSlot); // 드래그 시작한 슬롯이면 보여주지 않기
 
             if (isValid)
+            {
+                UpdateTooltipUI(_pointerOverSlot);
                 _itemTooltip.Show();
+            }
             else
                 _itemTooltip.Hide();
         }
@@ -534,8 +529,8 @@ namespace Rito.InventorySystem
         /// <summary> 툴팁 UI의 슬롯 데이터 갱신 </summary>
         private void UpdateTooltipUI(ItemSlotUI slot)
         {
-            if(!slot.IsAccessible || !slot.HasItem)
-                return;
+            //if(!slot.IsAccessible || !slot.HasItem)
+            //    return;
 
             // 툴팁 정보 갱신
             _itemTooltip.SetItemInfo(_inventory.GetItemData(slot.Index));

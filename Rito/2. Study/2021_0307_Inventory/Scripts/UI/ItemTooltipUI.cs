@@ -28,7 +28,6 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
         private RectTransform _rt;
-
         private CanvasScaler _canvasScaler;
 
         private static readonly Vector2 LeftTop = new Vector2(0f, 1f);
@@ -56,14 +55,13 @@ namespace Rito.InventorySystem
         {
             TryGetComponent(out _rt);
             _rt.pivot = LeftTop;
-
             _canvasScaler = GetComponentInParent<CanvasScaler>();
 
-            SetAllChildrenDisableRaycastTarget(transform);
+            DisableAllChildrenRaycastTarget(transform);
         }
 
         /// <summary> 모든 자식 UI에 레이캐스트 타겟 해제 </summary>
-        private void SetAllChildrenDisableRaycastTarget(Transform tr)
+        private void DisableAllChildrenRaycastTarget(Transform tr)
         {
             // 본인이 Graphic(UI)를 상속하면 레이캐스트 타겟 해제
             tr.TryGetComponent(out Graphic gr);
@@ -76,7 +74,7 @@ namespace Rito.InventorySystem
 
             for (int i = 0; i < childCount; i++)
             {
-                SetAllChildrenDisableRaycastTarget(tr.GetChild(i));
+                DisableAllChildrenRaycastTarget(tr.GetChild(i));
             }
         }
 

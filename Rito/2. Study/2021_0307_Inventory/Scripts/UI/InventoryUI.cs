@@ -518,7 +518,7 @@ namespace Rito.InventorySystem
 
             EditorLog($"UI - Try Separate Amount: Slot [{indexA} -> {indexB}]");
 
-            string itemName = _inventory.GetItemName(indexA);
+            string itemName = $"{_inventory.GetItemName(indexA)} x{amount}";
 
             _popup.OpenAmountInputPopup(
                 amt => _inventory.SeparateAmount(indexA, indexB, amt),
@@ -529,8 +529,8 @@ namespace Rito.InventorySystem
         /// <summary> 툴팁 UI의 슬롯 데이터 갱신 </summary>
         private void UpdateTooltipUI(ItemSlotUI slot)
         {
-            //if(!slot.IsAccessible || !slot.HasItem)
-            //    return;
+            if(!slot.IsAccessible || !slot.HasItem)
+                return;
 
             // 툴팁 정보 갱신
             _itemTooltip.SetItemInfo(_inventory.GetItemData(slot.Index));

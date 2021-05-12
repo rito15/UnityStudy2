@@ -74,11 +74,11 @@ namespace Rito.InventorySystem
         #region .
 
         // 초기 수용 한도
-        [SerializeField, Range(1, 64)]
+        [SerializeField, Range(8, 64)]
         private int _initalCapacity = 32;
 
         // 최대 수용 한도(아이템 배열 크기)
-        [SerializeField, Range(32, 64)]
+        [SerializeField, Range(8, 64)]
         private int _maxCapacity = 64;
 
         [SerializeField]
@@ -88,16 +88,26 @@ namespace Rito.InventorySystem
         [SerializeField]
         private Item[] _items;
 
-        /// <summary> 정렬 등의 작업을 위한 임시 아이템 리스트 </summary>
-        List<Item> tempItemList = new List<Item>();
+        /// <summary> 업데이트 할 인덱스 목록 </summary>
+        private HashSet<int> _indexSetForUpdate = new HashSet<int>();
 
         /// <summary> 아이템 데이터 타입별 정렬 가중치 </summary>
-        private static Dictionary<Type, int> _sortingWeightMap = new Dictionary<Type, int>
+        private readonly static Dictionary<Type, int> _sortWeightDict = new Dictionary<Type, int>
+        {
+            { typeof(PortionItemData), 10000 },
+            { typeof(WeaponItemData),  20000 },
+            { typeof(ArmorItemData),   30000 },
+        };
+
+        private class ItemComparer : IComparer<Item>
+        {
+            public int Compare(Item a, Item b)
             {
-                { typeof(PortionItemData), 10000 },
-                { typeof(WeaponItemData),  20000 },
-                { typeof(ArmorItemData),   30000 }
-            };
+                return (a.Data.ID + _sortWeightDict[a.Data.GetType()])
+                     - (b.Data.ID + _sortWeightDict[b.Data.GetType()]);
+            }
+        }
+        private static readonly ItemComparer _itemComparer = new ItemComparer();
 
         #endregion
         /***********************************************************************
@@ -162,6 +172,78 @@ namespace Rito.InventorySystem
             }
 
             return -1;
+        }
+
+
+
+        /// <summary> 해당하는 인덱스의 슬롯 상태 및 UI 갱신 </summary>
+        private void UpdateSlot(int index)
+        {
+            if (!IsValidIndex(index)) return;
+
+            Item item = _items[index];
+
+            // 1. 아이템이 슬롯에 존재하는 경우
+            if (item != null)
+            {
+                // 아이콘 등록
+                _inventoryUI.SetItemIcon(index, item.Data.IconSprite);
+
+                // 1-1. 셀 수 있는 아이템
+                if (item is CountableItem ci)
+                {
+                    // 1-1-1. 수량이 0인 경우, 아이템 제거
+                    if (ci.IsEmpty)
+                    {
+                        _items[index] = null;
+                        RemoveIcon();
+                        return;
+                    }
+                    // 1-1-2. 수량 텍스트 표시
+                    else
+                    {
+                        _inventoryUI.SetItemAmountText(index, ci.Amount);
+                    }
+                }
+                // 1-2. 셀 수 없는 아이템인 경우 수량 텍스트 제거
+                else
+                {
+                    _inventoryUI.HideItemAmountText(index);
+                }
+
+                // 슬롯 필터 상태 업데이트
+                _inventoryUI.UpdateSlotFilterState(index, item.Data);
+            }
+            // 2. 빈 슬롯인 경우 : 아이콘 제거
+            else
+            {
+                RemoveIcon();
+            }
+
+            // 로컬 : 아이콘 제거하기
+            void RemoveIcon()
+            {
+                _inventoryUI.RemoveItem(index);
+                _inventoryUI.HideItemAmountText(index); // 수량 텍스트 숨기기
+            }
+        }
+
+        /// <summary> 해당하는 인덱스의 슬롯들의 상태 및 UI 갱신 </summary>
+        private void UpdateSlot(params int[] indices)
+        {
+            foreach (var i in indices)
+            {
+                UpdateSlot(i);
+            }
+        }
+
+        /// <summary> 모든 슬롯들의 상태를 UI에 갱신 </summary>
+        private void UpdateAllSlot()
+        {
+            for (int i = 0; i < Capacity; i++)
+            {
+                UpdateSlot(i);
+            }
         }
 
         #endregion
@@ -438,76 +520,6 @@ namespace Rito.InventorySystem
             }
         }
 
-        /// <summary> 해당하는 인덱스의 슬롯 상태 및 UI 갱신 </summary>
-        public void UpdateSlot(int index)
-        {
-            if (!IsValidIndex(index)) return;
-
-            Item item = _items[index];
-
-            // 1. 아이템이 슬롯에 존재하는 경우
-            if (item != null)
-            {
-                // 아이콘 등록
-                _inventoryUI.SetItemIcon(index, item.Data.IconSprite);
-
-                // 1-1. 셀 수 있는 아이템
-                if (item is CountableItem ci)
-                {
-                    // 1-1-1. 수량이 0인 경우, 아이템 제거
-                    if (ci.IsEmpty)
-                    {
-                        _items[index] = null;
-                        RemoveIcon();
-                        return;
-                    }
-                    // 1-1-2. 수량 텍스트 표시
-                    else
-                    {
-                        _inventoryUI.SetItemAmountText(index, ci.Amount);
-                    }
-                }
-                // 1-2. 셀 수 없는 아이템인 경우 수량 텍스트 제거
-                else
-                {
-                    _inventoryUI.HideItemAmountText(index);
-                }
-
-                // 슬롯 필터 상태 업데이트
-                _inventoryUI.UpdateSlotFilterState(index, item.Data);
-            }
-            // 2. 빈 슬롯인 경우 : 아이콘 제거
-            else
-            {
-                RemoveIcon();
-            }
-
-            // 로컬 : 아이콘 제거하기
-            void RemoveIcon()
-            {
-                _inventoryUI.RemoveItem(index);
-                _inventoryUI.HideItemAmountText(index); // 수량 텍스트 숨기기
-            }
-        }
-
-        /// <summary> 해당하는 인덱스의 슬롯들의 상태 및 UI 갱신 </summary>
-        public void UpdateSlot(params int[] indices)
-        {
-            foreach (var i in indices)
-            {
-                UpdateSlot(i);
-            }
-        }
-
-        /// <summary> 모든 슬롯들의 상태를 UI에 갱신 </summary>
-        public void UpdateAllSlot()
-        {
-            for (int i = 0; i < Capacity; i++)
-            {
-                UpdateSlot(i);
-            }
-        }
-
         /// <summary> 모든 슬롯 UI에 접근 가능 여부 업데이트 </summary>
         public void UpdateAccessibleStatesAll()
         {
@@ -517,51 +529,68 @@ namespace Rito.InventorySystem
         /// <summary> 빈 슬롯 없이 앞에서부터 채우기 </summary>
         public void TrimAll()
         {
-            tempItemList.Clear();
-            tempItemList.Capacity = Capacity;
+            // 가장 빠른 배열 빈공간 채우기 알고리즘
 
-            // 1. 비어있지 않은 슬롯 조사
-            for (int i = 0; i < Capacity; i++)
+            // i 커서와 j 커서
+            // i 커서 : 가장 앞에 있는 빈칸을 찾는 커서
+            // j 커서 : i 커서 위치에서부터 뒤로 이동하며 기존재 아이템을 찾는 커서
+
+            // i커서가 빈칸을 찾으면 j 커서는 i+1 위치부터 탐색
+            // j커서가 아이템을 찾으면 아이템을 옮기고, i 커서는 i+1 위치로 이동
+            // j커서가 Capacity에 도달하면 루프 즉시 종료
+
+            _indexSetForUpdate.Clear();
+
+            int i = -1;
+            while (_items[++i] != null) ;
+            int j = i;
+
+            while (true)
             {
-                if (_items[i] != null)
-                    tempItemList.Add(_items[i]);
+                while (++j < Capacity && _items[j] == null);
+
+                if (j == Capacity)
+                    break;
+
+                _indexSetForUpdate.Add(i);
+                _indexSetForUpdate.Add(j);
+
+                _items[i] = _items[j];
+                _items[j] = null;
+                i++;
             }
 
-            // 2. 앞에서부터 채우기
-            for (int i = 0; i < Capacity; i++)
+            foreach (var index in _indexSetForUpdate)
             {
-                _items[i] = (i < tempItemList.Count) ? tempItemList[i] : null;
+                UpdateSlot(index);
             }
-
-            // 3. 모든 슬롯 갱신
-            UpdateAllSlot();
-            _inventoryUI.UpdateAllSlotFilters(); // 필터 상태 업데이트
+            _inventoryUI.UpdateAllSlotFilters();
         }
 
         /// <summary> 빈 슬롯 없이 채우면서 아이템 종류별로 정렬하기 </summary>
         public void SortAll()
         {
-            tempItemList.Clear();
-            tempItemList.Capacity = Capacity;
+            // 1. Trim
+            int i = -1;
+            while (_items[++i] != null) ;
+            int j = i;
 
-            // 1. 비어있지 않은 아이템들만 리스트로 담아오기
-            for (int i = 0; i < Capacity; i++)
-                if (_items[i] != null)
-                    tempItemList.Add(_items[i]);
-
-            // 2. 미리 정한 가중치를 이용해 리스트 정렬
-            tempItemList.Sort((a, b) =>
+            while (true)
             {
-                if (a == null || b == null) return 1;
-                return a.Data.ID * _sortingWeightMap[a.Data.GetType()] - b.Data.ID * _sortingWeightMap[b.Data.GetType()];
-            });
+                while (++j < Capacity && _items[j] == null) ;
 
-            // 3. 리스트의 아이템을 배열로 복원
-            for (int i = 0; i < Capacity; i++)
-            {
-                _items[i] = (i < tempItemList.Count) ? tempItemList[i] : null;
+                if (j == Capacity)
+                    break;
+
+                _items[i] = _items[j];
+                _items[j] = null;
+                i++;
             }
 
+            // 2. Sort
+            Array.Sort(_items, 0, i, _itemComparer);
+
+            // 3. Update
             UpdateAllSlot();
             _inventoryUI.UpdateAllSlotFilters(); // 필터 상태 업데이트
         }

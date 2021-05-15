@@ -45,11 +45,6 @@ namespace Rito.InventorySystem
 {
     public class InventoryUI : MonoBehaviour
     {
-        /// <summary> 인벤토리 UI 내 아이템 필터링 옵션 </summary>
-        public enum FilterOption
-        {
-            All, Equipment, Portion
-        }
         /***********************************************************************
         *                               Option Fields
         ***********************************************************************/
@@ -58,8 +53,8 @@ namespace Rito.InventorySystem
         [Range(0, 10)]
         [SerializeField] private int _horizontalSlotCount = 8;  // 슬롯 가로 개수
         [Range(0, 10)]
-        [SerializeField] private int _verticalSlotCount = 8;     // 슬롯 세로 개수
-        [SerializeField] private float _slotMargin = 8f;     // 한 슬롯의 상하좌우 여백
+        [SerializeField] private int _verticalSlotCount = 8;      // 슬롯 세로 개수
+        [SerializeField] private float _slotMargin = 8f;          // 한 슬롯의 상하좌우 여백
         [SerializeField] private float _contentAreaPadding = 20f; // 인벤토리 영역의 내부 여백
         [Range(32, 64)]
         [SerializeField] private float _slotSize = 64f;      // 각 슬롯의 크기
@@ -111,7 +106,12 @@ namespace Rito.InventorySystem
         private Vector3 _beginDragIconPoint;   // 드래그 시작 시 슬롯의 위치
         private Vector3 _beginDragCursorPoint; // 드래그 시작 시 커서의 위치
         private int _beginDragSlotSiblingIndex;
-
+        
+        /// <summary> 인벤토리 UI 내 아이템 필터링 옵션 </summary>
+        private enum FilterOption
+        {
+            All, Equipment, Portion
+        }
         private FilterOption _currentFilterOption = FilterOption.All;
 
         #endregion
@@ -229,14 +229,14 @@ namespace Rito.InventorySystem
 
         private void InitToggleEvents()
         {
-            _toggleFilterAll.onValueChanged.AddListener(       value => UpdateFilter(value, FilterOption.All));
-            _toggleFilterEquipments.onValueChanged.AddListener(value => UpdateFilter(value, FilterOption.Equipment));
-            _toggleFilterPortions.onValueChanged.AddListener(  value => UpdateFilter(value, FilterOption.Portion));
+            _toggleFilterAll.onValueChanged.AddListener(       flag => UpdateFilter(flag, FilterOption.All));
+            _toggleFilterEquipments.onValueChanged.AddListener(flag => UpdateFilter(flag, FilterOption.Equipment));
+            _toggleFilterPortions.onValueChanged.AddListener(  flag => UpdateFilter(flag, FilterOption.Portion));
 
             // Local Method
-            void UpdateFilter(bool trigger, FilterOption option)
+            void UpdateFilter(bool flag, FilterOption option)
             {
-                if (trigger)
+                if (flag)
                 {
                     _currentFilterOption = option;
                     UpdateAllSlotFilters();
@@ -602,55 +602,37 @@ namespace Rito.InventorySystem
             }
         }
 
-        /// <summary> 모든 슬롯 필터 상태 업데이트 </summary>
-        public void UpdateAllSlotFilters()
-        {
-            bool[] filterMarks;
-            int capacity = _inventory.Capacity;
-
-            // 아이템 타입에 따라 필터 상태 배열 초기화
-            switch (_currentFilterOption)
-            {
-                default:
-                case FilterOption.All:
-                    filterMarks = new bool[capacity];
-                    for (int i = 0; i < capacity; i++)
-                        filterMarks[i] = true;
-                    break;
-
-                case FilterOption.Equipment:
-                    filterMarks = _inventory.GetFilterMarkArray<EquipmentItemData>();
-                    break;
-
-                case FilterOption.Portion:
-                    filterMarks = _inventory.GetFilterMarkArray<PortionItemData>();
-                    break;
-            }
-
-            // 모든 슬롯에 적용
-            for (int i = 0; i < capacity; i++)
-            {
-                _slotUIList[i].SetItemAccessibleState(filterMarks[i]);
-            }
-        }
-
         /// <summary> 특정 슬롯의 필터 상태 업데이트 </summary>
         public void UpdateSlotFilterState(int index, ItemData itemData)
         {
             bool isFiltered = true;
 
-            switch (_currentFilterOption)
-            {
-                case FilterOption.Equipment:
-                    isFiltered = (itemData is EquipmentItemData);
-                    break;
+            // null인 슬롯은 타입 검사 없이 필터 활성화
+            if(itemData != null)
+                switch (_currentFilterOption)
+                {
+                    case FilterOption.Equipment:
+                        isFiltered = (itemData is EquipmentItemData);
+                        break;
 
-                case FilterOption.Portion:
-                    isFiltered = (itemData is PortionItemData);
-                    break;
-            }
+                    case FilterOption.Portion:
+                        isFiltered = (itemData is PortionItemData);
+                        break;
+                }
 
             _slotUIList[index].SetItemAccessibleState(isFiltered);
+        }
+
+        /// <summary> 모든 슬롯 필터 상태 업데이트 </summary>
+        public void UpdateAllSlotFilters()
+        {
+            int capacity = _inventory.Capacity;
+
+            for (int i = 0; i < capacity; i++)
+            {
+                ItemData data = _inventory.GetItemData(i);
+                UpdateSlotFilterState(i, data);
+            }
         }
 
         #endregion

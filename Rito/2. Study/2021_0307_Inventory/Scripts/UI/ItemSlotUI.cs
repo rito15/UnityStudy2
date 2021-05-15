@@ -17,7 +17,7 @@ namespace Rito.InventorySystem
         ***********************************************************************/
         #region .
         [Tooltip("슬롯 내에서 아이콘과 슬롯 사이의 여백")]
-        public float _padding = 1f;
+        [SerializeField] private float _padding = 1f;
 
         [Tooltip("아이템 아이콘 이미지")]
         [SerializeField] private Image _iconImage;

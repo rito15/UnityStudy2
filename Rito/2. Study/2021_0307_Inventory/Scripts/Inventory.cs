@@ -34,7 +34,6 @@ using UnityEngine;
         -  1 : 셀 수 없는 아이템이거나 수량 1
     - ItemData GetItemData(int) : 해당 인덱스의 아이템 정보
     - string GetItemName(int) : 해당 인덱스의 아이템 이름
-    - bool[] GetFilterMarkArray<T>() : T(ItemData 하위 클래스) 타입의 슬롯들은 true, 나머지는 false로 초기화한 배열
 
     - int Add(ItemData, int) : 해당 타입의 아이템을 지정한 개수만큼 인벤토리에 추가
         - 자리 부족으로 못넣은 개수만큼 리턴(0이면 모두 추가 성공했다는 의미)
@@ -89,7 +88,7 @@ namespace Rito.InventorySystem
         private Item[] _items;
 
         /// <summary> 업데이트 할 인덱스 목록 </summary>
-        private HashSet<int> _indexSetForUpdate = new HashSet<int>();
+        private readonly HashSet<int> _indexSetForUpdate = new HashSet<int>();
 
         /// <summary> 아이템 데이터 타입별 정렬 가중치 </summary>
         private readonly static Dictionary<Type, int> _sortWeightDict = new Dictionary<Type, int>
@@ -173,8 +172,6 @@ namespace Rito.InventorySystem
 
             return -1;
         }
-
-
 
         /// <summary> 해당하는 인덱스의 슬롯 상태 및 UI 갱신 </summary>
         private void UpdateSlot(int index)
@@ -261,7 +258,7 @@ namespace Rito.InventorySystem
         /// <summary> 해당 슬롯이 셀 수 있는 아이템인지 여부 </summary>
         public bool IsCountableItem(int index)
         {
-            return IsValidIndex(index) && _items[index] is CountableItem;
+            return HasItem(index) && _items[index] is CountableItem;
         }
 
         /// <summary> 
@@ -298,20 +295,6 @@ namespace Rito.InventorySystem
             if (_items[index] == null) return "";
 
             return _items[index].Data.Name;
-        }
-
-        /// <summary> 활성 슬롯들 중 특정 타입의 아이템은 true, 다른 아이템들은 false로 표시한 배열 리턴 </summary>
-        public bool[] GetFilterMarkArray<T>() where T : ItemData
-        {
-            bool[] markArray = new bool[Capacity];
-
-            for (int i = 0; i < Capacity; i++)
-            {
-                // null이면 필터에 포함
-                markArray[i] = (_items[i] == null || _items[i].Data is T);
-            }
-
-            return markArray;
         }
 
         #endregion

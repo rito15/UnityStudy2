@@ -1,5 +1,5 @@
 ﻿// 설명 : 
-Shader "FogOfWar/FogOfWar"
+Shader "FogOfWar/FogOfWarType1"
 {
     Properties
     {

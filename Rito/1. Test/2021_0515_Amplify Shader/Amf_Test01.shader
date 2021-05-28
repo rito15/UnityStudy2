@@ -14,6 +14,7 @@ Shader "Amf_Test01"
 		Tags{ "RenderType" = "Opaque"  "Queue" = "Geometry+0" }
 		Cull Back
 		CGPROGRAM
+		#include "UnityShaderVariables.cginc"
 		#pragma target 3.0
 		#pragma surface surf Standard keepalpha addshadow fullforwardshadows exclude_path:deferred 
 		struct Input
@@ -29,7 +30,8 @@ Shader "Amf_Test01"
 			float4 temp_cast_0 = (color1.r).xxxx;
 			float4 color5 = IsGammaSpace() ? float4(0.2079922,0.6432285,0.7735849,0) : float4(0.03564979,0.3713542,0.5600193,0);
 			float2 temp_cast_1 = (_Frequency).xx;
-			float2 FinalUV13_g1 = ( temp_cast_1 * ( 0.5 + i.uv_texcoord ) );
+			float2 panner7 = ( _Time.y * float2( 0.2,0 ) + i.uv_texcoord);
+			float2 FinalUV13_g1 = ( temp_cast_1 * ( 0.5 + panner7 ) );
 			float2 temp_cast_2 = (0.5).xx;
 			float2 temp_cast_3 = (1.0).xx;
 			float4 appendResult16_g1 = (float4(ddx( FinalUV13_g1 ) , ddy( FinalUV13_g1 )));
@@ -60,15 +62,23 @@ Shader "Amf_Test01"
 }
 /*ASEBEGIN
 Version=18900
-529;197;1345;793;1203.155;294.672;1.128789;True;False
+379;268;1345;787;1409.519;540.1334;1.3;True;False
+Node;AmplifyShaderEditor.SimpleTimeNode;9;-821.0233,-89.0013;Inherit;False;1;0;FLOAT;1;False;1;FLOAT;0
+Node;AmplifyShaderEditor.TextureCoordinatesNode;8;-846.986,-321.5318;Inherit;False;0;-1;2;3;2;SAMPLER2D;;False;0;FLOAT2;1,1;False;1;FLOAT2;0,0;False;5;FLOAT2;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.Vector2Node;12;-806.791,-208.9172;Inherit;False;Constant;_Vector1;Vector 1;2;0;Create;True;0;0;0;False;0;False;0.2,0;0,0;0;3;FLOAT2;0;FLOAT;1;FLOAT;2
 Node;AmplifyShaderEditor.ColorNode;1;-844.1997,-3.444352;Inherit;False;Constant;_Color0;Color 0;0;0;Create;True;0;0;0;False;0;False;0.8301887,0.8050272,0.4111784,0;0,0,0,0;True;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.ColorNode;5;-844.1998,159.1013;Inherit;False;Constant;_Color2;Color 2;0;0;Create;True;0;0;0;False;0;False;0.2079922,0.6432285,0.7735849,0;0,0,0,0;True;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.RangedFloatNode;6;-849.8435,330.6773;Inherit;False;Property;_Frequency;Frequency;0;0;Create;True;0;0;0;True;0;False;2;1;0;8;0;1;FLOAT;0
-Node;AmplifyShaderEditor.FunctionNode;2;-557.4879,49.60874;Inherit;False;Checkerboard;-1;;1;43dad715d66e03a4c8ad5f9564018081;0;4;1;FLOAT2;0,0;False;2;COLOR;0,0,0,0;False;3;COLOR;0,0,0,0;False;4;FLOAT2;0,0;False;1;COLOR;0
+Node;AmplifyShaderEditor.PannerNode;7;-612.7987,-228.0734;Inherit;True;3;0;FLOAT2;0,0;False;2;FLOAT2;0,0;False;1;FLOAT;1;False;1;FLOAT2;0
+Node;AmplifyShaderEditor.FunctionNode;2;-557.4879,49.60874;Inherit;True;Checkerboard;-1;;1;43dad715d66e03a4c8ad5f9564018081;0;4;1;FLOAT2;0,0;False;2;COLOR;0,0,0,0;False;3;COLOR;0,0,0,0;False;4;FLOAT2;0,0;False;1;COLOR;0
 Node;AmplifyShaderEditor.StandardSurfaceOutputNode;0;0,0;Float;False;True;-1;2;ASEMaterialInspector;0;0;Standard;Amf_Test01;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;Back;0;False;-1;0;False;-1;False;0;False;-1;0;False;-1;False;0;Opaque;0.5;True;True;0;False;Opaque;;Geometry;ForwardOnly;14;all;True;True;True;True;0;False;-1;False;0;False;-1;255;False;-1;255;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;-1;False;2;15;10;25;False;0.5;True;0;0;False;-1;0;False;-1;0;0;False;-1;0;False;-1;0;False;-1;0;False;-1;0;False;2;0,0,0,0;VertexOffset;True;False;Cylindrical;False;Relative;0;;-1;-1;-1;-1;0;False;0;0;False;-1;-1;0;False;-1;0;0;0;False;0.1;False;-1;0;False;-1;False;16;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT;0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT;0;False;9;FLOAT;0;False;10;FLOAT;0;False;13;FLOAT3;0,0,0;False;11;FLOAT3;0,0,0;False;12;FLOAT3;0,0,0;False;14;FLOAT4;0,0,0,0;False;15;FLOAT3;0,0,0;False;0
+WireConnection;7;0;8;0
+WireConnection;7;2;12;0
+WireConnection;7;1;9;0
+WireConnection;2;1;7;0
 WireConnection;2;2;1;1
 WireConnection;2;3;5;0
 WireConnection;2;4;6;0
 WireConnection;0;0;2;0
 ASEEND*/
-//CHKSM=E91F6BCD9BE1E4FAA656750AB10D47B44316B723
+//CHKSM=3E5DF30800DEB102174EC7672C92C0262A143F57

@@ -15,11 +15,21 @@ namespace Rito
 
         private MeshRenderer[] renderers;
         private MaterialPropertyBlock mpb;
+        private MaterialPropertyBlock[] mpbArr;
 
         private void Start()
         {
             renderers = GetComponentsInChildren<MeshRenderer>();
             mpb = new MaterialPropertyBlock();
+
+            // 렌더러마다 MPB 객체 하나씩 생성하여 사용
+            {
+                mpbArr = new MaterialPropertyBlock[renderers.Length];
+                for (int i = 0; i < mpbArr.Length; i++)
+                {
+                    mpbArr[i] = new MaterialPropertyBlock();
+                }
+            }
 
             if (!_useMaterialPropertyBlock)
                 SetRandomProperty();
@@ -51,11 +61,18 @@ namespace Rito
 
         private void SetRandomPropertyWithMPB()
         {
-            foreach (var r in renderers)
+            //foreach (var r in renderers)
+            //{
+            //    mpb.SetColor("_Color", UnityEngine.Random.ColorHSV());
+            //    mpb.SetFloat("_Metallic", UnityEngine.Random.Range(0f, 1f));
+            //    r.SetPropertyBlock(mpb);
+            //}
+
+            for (int i = 0; i < renderers.Length; i++)
             {
-                mpb.SetColor("_Color", UnityEngine.Random.ColorHSV());
-                mpb.SetFloat("_Metallic", UnityEngine.Random.Range(0f, 1f));
-                r.SetPropertyBlock(mpb);
+                mpbArr[i].SetColor("_Color", UnityEngine.Random.ColorHSV());
+                mpbArr[i].SetFloat("_Metallic", UnityEngine.Random.Range(0f, 1f));
+                renderers[i].SetPropertyBlock(mpbArr[i]);
             }
         }
     }

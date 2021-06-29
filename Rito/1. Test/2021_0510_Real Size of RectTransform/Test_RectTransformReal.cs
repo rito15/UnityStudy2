@@ -42,7 +42,7 @@ public class Test_RectTransformReal : MonoBehaviour
         return (rt.rect.width * ratio, rt.rect.height * ratio);
     }
 
-
+#if UNITY_EDITOR
     [CustomEditor(typeof(Test_RectTransformReal))]
     private class CE : UnityEditor.Editor
     {
@@ -63,4 +63,5 @@ public class Test_RectTransformReal : MonoBehaviour
             }
         }
     }
+#endif
 }

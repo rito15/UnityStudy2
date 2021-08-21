@@ -30,7 +30,8 @@ public class Sample_PlayModeSave : MonoBehaviour
                 switch (state)
                 {
                     case UnityEditor.PlayModeStateChange.ExitingPlayMode:
-                        var targets = FindObjectsOfType(typeof(Inner_PlayModeSave).DeclaringType);
+                        //var targets = FindObjectsOfType(typeof(Inner_PlayModeSave).DeclaringType); // 비활성 오브젝트 제외
+                        var targets = Resources.FindObjectsOfTypeAll(typeof(Inner_PlayModeSave).DeclaringType); // 비활성 오브젝트 포함
                         targetSoArr = new UnityEditor.SerializedObject[targets.Length];
                         for (int i = 0; i < targets.Length; i++)
                             targetSoArr[i] = new UnityEditor.SerializedObject(targets[i]);

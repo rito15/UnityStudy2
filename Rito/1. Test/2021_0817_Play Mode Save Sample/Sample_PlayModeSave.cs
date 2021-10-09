@@ -38,6 +38,7 @@ public class Sample_PlayModeSave : MonoBehaviour
                         break;
 
                     case UnityEditor.PlayModeStateChange.EnteredEditMode:
+                        if (targetSoArr == null) break;
                         foreach (var oldSO in targetSoArr)
                         {
                             if (oldSO.targetObject == null) continue;

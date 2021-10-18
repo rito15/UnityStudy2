@@ -12,21 +12,19 @@ public static class EditorTagLayerHelper
 #if UNITY_EDITOR
     private static bool isPlaymode = false;
 
-    [InitializeOnEnterPlayMode]
+    //[InitializeOnEnterPlayMode]
     private static void OnEnterPlayMode()
     {
         isPlaymode = true;
     }
 
-    [InitializeOnLoadMethod]
+    //[InitializeOnLoadMethod]
     private static void OnLoadMethod()
     {
         if (isPlaymode) return;
 
         AddNewLayer("Layer01");
         AddNewLayer("PostProcess");
-
-        Debug.Log("Hi");
     }
 #endif
 

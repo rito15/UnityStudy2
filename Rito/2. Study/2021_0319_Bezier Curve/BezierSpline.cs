@@ -94,7 +94,7 @@ namespace Rito.BezierCurveTest
 
         #endregion
         /***********************************************************************
-        *                               Calculae & Draw Curve
+        *                               Calculate & Draw Curve
         ***********************************************************************/
         #region .
         private Vector3[] curvePoints;
@@ -139,6 +139,7 @@ namespace Rito.BezierCurveTest
                 }
             }
         }
+
         private void DrawCurve()
         {
             if (points == null || points.Length < 2) return;

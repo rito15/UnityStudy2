@@ -73,16 +73,21 @@ namespace Rito.BezierCurveTest
 
 
         private Vector3[] curvePoints;
+
+        /// <summary> 베지어 커브 내의 지점들 미리 계산 </summary>
         private void CalculateCurvePoints(int count)
         {
+            Vector3 pA = pointA.position;
+            Vector3 pB = pointB.position;
+            Vector3 pC = pointC.position;
+            Vector3 pD = pointD.position;
+
             curvePoints = new Vector3[count + 1];
             float unit = 1.0f / count;
 
             int i = 0; float t = 0f;
             for (; i < count + 1; i++, t += unit)
             {
-                Vector3 pA = pointA.position, pB = pointB.position,
-                    pC = pointC.position, pD = pointD.position;
                 float t2 = t * t;
                 float t3 = t * t2;
                 float u = (1 - t);
@@ -91,10 +96,10 @@ namespace Rito.BezierCurveTest
 
                 curvePoints[i] =
                     pA * u3 +
-                    pB * t * u2 * 3 +
-                    pC * t2 * u * 3 +
+                    pB * (t  * u2 * 3) +
+                    pC * (t2 * u  * 3) +
                     pD * t3
-                    ;
+                ;
             }
         }
 

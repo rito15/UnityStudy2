@@ -58,42 +58,32 @@ public class Test_RaycastToAABB : MonoBehaviour
     /// <summary> XY 평면에 정렬된 평면을 향해 레이캐스트 </summary>
     private Vector3 RaycastToPlaneXY(in Vector3 A, in Vector3 B, float planeZ)
     {
-        float ratio = (B.z - planeZ) / (B.z - A.z);
+        float ratio = (A.z - planeZ) / (A.z - B.z);
         Vector3 C;
-        C.x = (A.x - B.x) * ratio + (B.x);
-        C.y = (A.y - B.y) * ratio + (B.y);
+        C.x = (B.x - A.x) * ratio + (A.x);
+        C.y = (B.y - A.y) * ratio + (A.y);
         C.z = planeZ;
         return C;
     }
     /// <summary> XZ 평면에 정렬된 평면을 향해 레이캐스트 </summary>
     private Vector3 RaycastToPlaneXZ(in Vector3 A, in Vector3 B, float planeY)
     {
-        float ratio = (B.y - planeY) / (B.y - A.y);
+        float ratio = (A.y - planeY) / (A.y - B.y);
         Vector3 C;
-        C.x = (A.x - B.x) * ratio + (B.x);
-        C.z = (A.z - B.z) * ratio + (B.z);
+        C.x = (B.x - A.x) * ratio + (A.x);
+        C.z = (B.z - A.z) * ratio + (A.z);
         C.y = planeY;
         return C;
     }
     /// <summary> YZ 평면에 정렬된 평면을 향해 레이캐스트 </summary>
     private Vector3 RaycastToPlaneYZ(in Vector3 A, in Vector3 B, float planeX)
     {
-        float ratio = (B.x - planeX) / (B.x - A.x);
+        float ratio = (A.x - planeX) / (A.x - B.x);
         Vector3 C;
-        C.y = (A.y - B.y) * ratio + (B.y);
-        C.z = (A.z - B.z) * ratio + (B.z);
+        C.y = (B.y - A.y) * ratio + (A.y);
+        C.z = (B.z - A.z) * ratio + (A.z);
         C.x = planeX;
         return C;
-    }
-
-    /// <summary> 벡터의 각 요소마다 부호값 계산 </summary>
-    private Vector3 Sign(in Vector3 vec)
-    {
-        return new Vector3(
-            vec.x >= 0f ? 1f : -1f,
-            vec.y >= 0f ? 1f : -1f,
-            vec.z >= 0f ? 1f : -1f
-        );
     }
 
     /// <summary> 값이 닫힌 범위 내에 있는지 검사 </summary>
@@ -110,31 +100,40 @@ public class Test_RaycastToAABB : MonoBehaviour
         Vector3 max = bounds.max;
 
         Vector3 AB = B - A;
-        Vector3 signAB = Sign(AB);
         Vector3 contact;
 
         // [1] YZ 평면 검사
-        if (signAB.x > 0) contact = RaycastToPlaneYZ(A, B, min.x);
-        else              contact = RaycastToPlaneYZ(A, B, max.x);
+        if (AB.x > 0) contact = RaycastToPlaneYZ(A, B, min.x);
+        else          contact = RaycastToPlaneYZ(A, B, max.x);
 
         if (InRange(contact.y, min.y, max.y) && InRange(contact.z, min.z, max.z))
-            return contact;
-        
+            goto VALIDATE_DISTANCE;
+
         // [2] XZ 평면 검사
-        if (signAB.y > 0) contact = RaycastToPlaneXZ(A, B, min.y);
-        else              contact = RaycastToPlaneXZ(A, B, max.y);
+        if (AB.y > 0) contact = RaycastToPlaneXZ(A, B, min.y);
+        else          contact = RaycastToPlaneXZ(A, B, max.y);
 
         if (InRange(contact.x, min.x, max.x) && InRange(contact.z, min.z, max.z))
-            return contact;
+            goto VALIDATE_DISTANCE;
 
         // [3] XY 평면 검사
-        if (signAB.z > 0) contact = RaycastToPlaneXY(A, B, min.z);
-        else              contact = RaycastToPlaneXY(A, B, max.z);
+        if (AB.z > 0) contact = RaycastToPlaneXY(A, B, min.z);
+        else          contact = RaycastToPlaneXY(A, B, max.z);
 
         if (InRange(contact.x, min.x, max.x) && InRange(contact.y, min.y, max.y))
-            return contact;
+            goto VALIDATE_DISTANCE;
 
         // [4] No Contact Point
         return null;
+
+        // 길이 검사 : 교점이 레이보다 더 긴 경우 제외
+    VALIDATE_DISTANCE:
+        float ab2 = AB.sqrMagnitude;
+        float len = (contact - A).sqrMagnitude;
+
+        if (ab2 < len)
+            return null;
+        else
+            return contact;
     }
 }

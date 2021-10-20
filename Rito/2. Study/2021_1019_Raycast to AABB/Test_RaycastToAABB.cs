@@ -98,27 +98,23 @@ public class Test_RaycastToAABB : MonoBehaviour
         ref Vector3 B = ref end;
         Vector3 min = bounds.min;
         Vector3 max = bounds.max;
-
         Vector3 AB = B - A;
         Vector3 contact;
 
         // [1] YZ 평면 검사
-        if (AB.x > 0) contact = RaycastToPlaneYZ(A, B, min.x);
-        else          contact = RaycastToPlaneYZ(A, B, max.x);
+        contact = RaycastToPlaneYZ(A, B, (AB.x > 0) ? min.x : max.x);
 
         if (InRange(contact.y, min.y, max.y) && InRange(contact.z, min.z, max.z))
             goto VALIDATE_DISTANCE;
 
         // [2] XZ 평면 검사
-        if (AB.y > 0) contact = RaycastToPlaneXZ(A, B, min.y);
-        else          contact = RaycastToPlaneXZ(A, B, max.y);
+        contact = RaycastToPlaneXZ(A, B, (AB.y > 0) ? min.y : max.y);
 
         if (InRange(contact.x, min.x, max.x) && InRange(contact.z, min.z, max.z))
             goto VALIDATE_DISTANCE;
 
         // [3] XY 평면 검사
-        if (AB.z > 0) contact = RaycastToPlaneXY(A, B, min.z);
-        else          contact = RaycastToPlaneXY(A, B, max.z);
+        contact = RaycastToPlaneXY(A, B, (AB.z > 0) ? min.z : max.z);
 
         if (InRange(contact.x, min.x, max.x) && InRange(contact.y, min.y, max.y))
             goto VALIDATE_DISTANCE;
@@ -130,10 +126,6 @@ public class Test_RaycastToAABB : MonoBehaviour
     VALIDATE_DISTANCE:
         float ab2 = AB.sqrMagnitude;
         float len = (contact - A).sqrMagnitude;
-
-        if (ab2 < len)
-            return null;
-        else
-            return contact;
+        return (ab2 < len) ? (Vector3?)null : contact;
     }
 }
